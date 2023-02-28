@@ -97,6 +97,7 @@ def corrTasks(outputdir, corr_method='spearman', saveMaskedimgs = False):
     
     # store results in transposed dataframe
     df = pd.DataFrame(corr_dictionary).T
+    df.index.name = 'Task_name'
     # save dataframe to csv
     df.to_csv(os.path.join(outputdir,f'gradscores_{corr_method}.tsv'),sep='\t')
     
