@@ -90,7 +90,7 @@ def corrTasks(outputdir, corr_method='spearman', saveMaskedimgs = False):
                 corr = pearsonr(gradient_array.flatten(), task_array_masked.flatten())[0]
                 
             # apply fishers-r-to-z transformation to correlation value
-            corr = np.arctanh(corr)
+            np.arctanh(corr)
 
             # plot correlation of flattened arrays [mostly for testing but keeping]
             #plt.scatter(gradient_array.flatten(), task_array_masked.flatten(), marker='.')
