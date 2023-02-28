@@ -15,6 +15,7 @@ import glob
 from scipy.stats import spearmanr, pearsonr
 import os 
 import pandas as pd
+import numpy as np
 
 
 # this function extracts necessary data needed to run corrTasks function (see below)
@@ -87,6 +88,9 @@ def corrTasks(outputdir, corr_method='spearman', saveMaskedimgs = False):
 
             elif corr_method == 'pearson':
                 corr = pearsonr(gradient_array.flatten(), task_array_masked.flatten())[0]
+                
+            # apply fishers-r-to-z transformation to correlation value
+            corr = np.arctanh(corr)
 
             # plot correlation of flattened arrays [mostly for testing but keeping]
             #plt.scatter(gradient_array.flatten(), task_array_masked.flatten(), marker='.')
