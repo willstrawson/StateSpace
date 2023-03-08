@@ -8,7 +8,6 @@ Contains functions to correlate tasks in task battery with gradients.
 
 """
 
-
 import nibabel as nib
 from nilearn import image as nimg
 import glob
@@ -20,6 +19,7 @@ import numpy as np
 
 # this function extracts necessary data needed to run corrTasks function (see below)
 def getdata():
+    # set path to current repository
     repo_path = os.path.split(os.path.split(os.path.realpath(__file__))[0])[0]
     # path to cotical only gradient maps 
     gradient_paths = sorted(glob.glob(os.path.join(repo_path, 'data/gradients/*.nii.gz')))
@@ -27,10 +27,11 @@ def getdata():
     gradient_mask_path = glob.glob(os.path.join(repo_path, 'data/masks/gradientmask_cortical.nii.gz'))[0]
     # task maps 
     task_paths = sorted(glob.glob(os.path.join(repo_path, 'data/realTaskNiftis/*.nii.gz')))
-
+    # return paths
     return gradient_paths, gradient_mask_path, task_paths, repo_path
 
 
+# this function correlates task maps and gradient maps
 def corrTasks(outputdir, corr_method='spearman', saveMaskedimgs = False):
 
     # get all the relevent data by calling getdata() function
@@ -55,6 +56,7 @@ def corrTasks(outputdir, corr_method='spearman', saveMaskedimgs = False):
         # apply mask 
         multmap = nimg.math_img('a*b',a=taskimg, b=maskimg) #element wise multiplication 
         
+        # if you want to save masked task images, set to true
         if saveMaskedimgs == True:
             nib.save(multmap, 
             os.path.join(outputdir,f'{task_name}_masked.nii.gz'))
@@ -89,10 +91,14 @@ def corrTasks(outputdir, corr_method='spearman', saveMaskedimgs = False):
             elif corr_method == 'pearson':
                 corr = pearsonr(gradient_array.flatten(), task_array_masked.flatten())[0]
                 
+            print ("Raw correlation:",corr)
+                
             # apply fishers-r-to-z transformation to correlation value
-            np.arctanh(corr)
+            corr = np.arctanh(corr)
+            
+            print ("Fisher r-to-z transformed correlation:",corr)
 
-            # plot correlation of flattened arrays [mostly for testing but keeping]
+            # plot correlation of flattened arrays [mostly for testing but keeping for now]
             #plt.scatter(gradient_array.flatten(), task_array_masked.flatten(), marker='.')
             #plt.savefig(os.path.join(repo_path,f'scratch/plots/{task_name}_{gradnumber}_scatter.png'))
             #plt.close()

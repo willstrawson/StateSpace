@@ -1,0 +1,9 @@
+setup.py
+StateSpace/CorrelateTasksWithGradients.py
+StateSpace/CreateBinarizedMask.py
+StateSpace/__init__.py
+StateSpace.egg-info/PKG-INFO
+StateSpace.egg-info/SOURCES.txt
+StateSpace.egg-info/dependency_links.txt
+StateSpace.egg-info/requires.txt
+StateSpace.egg-info/top_level.txt
