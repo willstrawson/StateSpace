@@ -22,6 +22,7 @@ import pkg_resources
 def getdata():
     # use pkg_resources to access the absolute path for each data subdirectory 
     gradient_subdir = pkg_resources.resource_filename('StateSpace','data/gradients')
+    print (gradient_subdir)
     # then use glob to access a list of files within 
     gradient_paths = sorted(glob.glob(f'{gradient_subdir}/*nii.gz'))
 
