@@ -26,6 +26,7 @@ def getdata():
     gradient_paths = sorted(glob.glob(f'{gradient_subdir}/*nii.gz'))
 
     mask_subdir = pkg_resources.resource_filename('StateSpace','data/masks')
+    print (mask_subdir)
     gradient_mask_path = sorted(glob.glob(f'{mask_subdir}/*_cortical.nii.gz'))[0]
 
     task_subdir = pkg_resources.resource_filename('StateSpace','data/realTaskNiftis')
