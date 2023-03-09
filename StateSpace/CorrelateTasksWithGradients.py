@@ -22,7 +22,9 @@ import pkg_resources
 
 
 def getdata():
+    # use pkg_resources to access the absolute path for each data subdirectory 
     gradient_subdir = pkg_resources.resource_filename('StateSpace','data/gradients')
+    # then use glob to access a list of files within 
     gradient_paths = sorted(glob.glob(f'{gradient_subdir}/*nii.gz'))
 
     mask_subdir = pkg_resources.resource_filename('StateSpace','data/masks')
@@ -32,20 +34,6 @@ def getdata():
     task_paths = sorted(glob.glob(f'{task_subdir}/*nii.gz'))
 
 
-    
-
-    '''
-    # set path to current repository
-    repo_path = os.path.split(os.path.realpath(__file__))[0]
-    print(repo_path)
-    # path to cotical only gradient maps 
-    gradient_paths = sorted(glob.glob(os.path.join(repo_path, 'data/gradients/*.nii.gz')))
-    # mask from these cortical-only maps 
-    gradient_mask_path = glob.glob(os.path.join(repo_path, 'data/masks/gradientmask_cortical.nii.gz'))[0]
-    # task maps 
-    task_paths = sorted(glob.glob(os.path.join(repo_path, 'data/realTaskNiftis/*.nii.gz')))
-    # return paths
-    '''
     return gradient_paths, gradient_mask_path, task_paths
 
 
