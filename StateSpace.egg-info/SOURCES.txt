@@ -12,6 +12,8 @@ StateSpace/data/gradients/gradient2.nii.gz
 StateSpace/data/gradients/gradient3.nii.gz
 StateSpace/data/gradients/gradient4.nii.gz
 StateSpace/data/gradients/gradient5.nii.gz
+StateSpace/data/masks/gradientmask_combo.nii.gz
+StateSpace/data/masks/gradientmask_cortical.nii.gz
 StateSpace/data/realTaskNiftis/easyMath.nii.gz
 StateSpace/data/realTaskNiftis/fingerTapping.nii.gz
 StateSpace/data/realTaskNiftis/friend.nii.gz

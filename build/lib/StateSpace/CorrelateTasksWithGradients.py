@@ -16,6 +16,8 @@ import os
 import pandas as pd
 import numpy as np
 import pkg_resources
+from scipy.stats import zscore
+
 
 
 # this function extracts necessary data needed to run corrTasks function (see below)
@@ -128,6 +130,11 @@ def corrTasks(outputdir, inputfiles=None, corr_method='spearman', saveMaskedimgs
     # store results in transposed dataframe
     df = pd.DataFrame(corr_dictionary).T
     df.index.name = 'Task_name'
+    
+    # Z-score each column and create new columns with the suffix '_z'
+    for col in df.columns:
+        df[col + '_z'] = zscore(df[col])
+
     # save dataframe to csv
     df.to_csv(os.path.join(outputdir,f'gradscores_{corr_method}.csv'))
 
