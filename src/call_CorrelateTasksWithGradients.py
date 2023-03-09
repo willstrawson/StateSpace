@@ -5,13 +5,16 @@ Create binarized mask from nifti image
 
 '''
 import glob
+import os
 from StateSpace import CorrelateTasksWithGradients
 
-#CorrelateTasksWithGradients.corrTasks("/Users/willstrawson/Documents/PhD/repos/StateSpace/scratch")
+# get path to output dir 
+outputdir = os.path.join(os.path.split(os.path.split(os.path.realpath(__file__))[0])[0], 'scratch')
 
-CorrelateTasksWithGradients.corrTasks("/Users/willstrawson/Documents/PhD/repos/StateSpace/scratch",
-inputfiles=glob.glob('/Users/willstrawson/Documents/PhD/Rotation_2/fMRI/lev_2/allps_avhsruns_0.2.gfeat/cope10.feat/stats/zstat*.nii.gz'))
+if os.path.exist(outputdir) == False: #If scratch doesn't exist 
+    os.mkdir(outputdir)
 
+CorrelateTasksWithGradients.corrTasks(outputdir)
 
 
 

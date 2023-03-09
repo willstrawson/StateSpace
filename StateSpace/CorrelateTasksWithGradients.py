@@ -19,8 +19,6 @@ import pkg_resources
 
 
 # this function extracts necessary data needed to run corrTasks function (see below)
-
-
 def getdata():
     # use pkg_resources to access the absolute path for each data subdirectory 
     gradient_subdir = pkg_resources.resource_filename('StateSpace','data/gradients')
@@ -45,6 +43,7 @@ def corrTasks(outputdir, inputfiles=None, corr_method='spearman', saveMaskedimgs
     if inputfiles is None:
         gradient_paths, gradient_mask_path, task_paths = getdata() # Get all the data paths you need
     elif inputfiles:
+        assert type(inputfiles)==list 
         assert os.path.exists(os.path.dirname(inputfiles[0]))
         print(f"Using {len(inputfiles)} input task maps")
         gradient_paths, gradient_mask_path, task_paths = getdata()
