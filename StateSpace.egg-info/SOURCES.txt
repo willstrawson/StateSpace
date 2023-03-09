@@ -1,6 +1,7 @@
 setup.py
 StateSpace/CorrelateTasksWithGradients.py
 StateSpace/CreateBinarizedMask.py
+StateSpace/Lesion.py
 StateSpace/__init__.py
 StateSpace.egg-info/PKG-INFO
 StateSpace.egg-info/SOURCES.txt
