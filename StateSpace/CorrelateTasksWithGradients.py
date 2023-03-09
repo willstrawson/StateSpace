@@ -127,6 +127,8 @@ def corrTasks(outputdir, inputfiles=None, corr_method='spearman', saveMaskedimgs
             corr_dictionary[task_name][grad_name]= corr # add corr value to dict
 
     # store results in transposed dataframe
+
+    # TODO: Z score column 
     df = pd.DataFrame(corr_dictionary).T
     df.index.name = 'Task_name'
     # save dataframe to csv

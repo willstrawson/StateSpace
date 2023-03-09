@@ -13,7 +13,7 @@ setup(
    include_package_data=True,
    package_data={'StateSpace': [
     'data/gradients/*nii.gz',
-    'data/masks/.nii.gz',
+    'data/masks/*.nii.gz',
     'data/realTaskNiftis/*.nii.gz'
     ]
     }
