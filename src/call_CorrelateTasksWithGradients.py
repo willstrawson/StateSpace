@@ -7,7 +7,7 @@ Create binarized mask from nifti image
 
 from StateSpace import CorrelateTasksWithGradients
 
-CorrelateTasksWithGradients.corrTasks("C:\\Users\\bront\\Documents\\repos\\StateSpace\\scratch\\results",
+CorrelateTasksWithGradients.corrTasks("/Users/willstrawson/Documents/PhD/repos/StateSpace/scratch",
                                       "spearman",
                                       saveMaskedimgs = True)
 

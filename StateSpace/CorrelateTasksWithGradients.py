@@ -15,12 +15,29 @@ from scipy.stats import spearmanr, pearsonr
 import os 
 import pandas as pd
 import numpy as np
+import pkg_resources
 
 
 # this function extracts necessary data needed to run corrTasks function (see below)
+
+
 def getdata():
+    gradient_subdir = pkg_resources.resource_filename('StateSpace','data/gradients')
+    gradient_paths = sorted(glob.glob(f'{gradient_subdir}/*nii.gz'))
+
+    mask_subdir = pkg_resources.resource_filename('StateSpace','data/masks')
+    gradient_mask_path = sorted(glob.glob(f'{mask_subdir}/*_cortical.nii.gz'))[0]
+
+    task_subdir = pkg_resources.resource_filename('StateSpace','data/realTaskNiftis')
+    task_paths = sorted(glob.glob(f'{task_subdir}/*nii.gz'))
+
+
+    
+
+    '''
     # set path to current repository
-    repo_path = os.path.split(os.path.split(os.path.realpath(__file__))[0])[0]
+    repo_path = os.path.split(os.path.realpath(__file__))[0]
+    print(repo_path)
     # path to cotical only gradient maps 
     gradient_paths = sorted(glob.glob(os.path.join(repo_path, 'data/gradients/*.nii.gz')))
     # mask from these cortical-only maps 
@@ -28,15 +45,17 @@ def getdata():
     # task maps 
     task_paths = sorted(glob.glob(os.path.join(repo_path, 'data/realTaskNiftis/*.nii.gz')))
     # return paths
-    return gradient_paths, gradient_mask_path, task_paths, repo_path
+    '''
+    return gradient_paths, gradient_mask_path, task_paths
+
 
 
 # this function correlates task maps and gradient maps
 def corrTasks(outputdir, corr_method='spearman', saveMaskedimgs = False):
 
     # get all the relevent data by calling getdata() function
-    gradient_paths, gradient_mask_path, task_paths, repo_path = getdata() # Get all the data paths you need
-    
+    gradient_paths, gradient_mask_path, task_paths = getdata() # Get all the data paths you need
+    print(gradient_mask_path)    
     # load mask as nib object once 
     maskimg = nib.load(gradient_mask_path)
 
@@ -48,7 +67,7 @@ def corrTasks(outputdir, corr_method='spearman', saveMaskedimgs = False):
 
         # load task image and data
         taskimg = nib.load(task)
-        
+
         # extract task name from file path
         task_name = os.path.basename(os.path.normpath(task))
         task_name = task_name.split(".")[0]
@@ -112,7 +131,5 @@ def corrTasks(outputdir, corr_method='spearman', saveMaskedimgs = False):
     df.to_csv(os.path.join(outputdir,f'gradscores_{corr_method}.tsv'),sep='\t')
     
     return df
-
-
 
 

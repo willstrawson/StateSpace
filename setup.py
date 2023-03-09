@@ -9,5 +9,12 @@ setup(
    author='Bronte Mckeown & Will Strawson',
    author_email='bronte.mckeown@gmail.com',
    packages=find_packages(include=['StateSpace']),
-   install_requires=required
+   install_requires=required,
+   include_package_data=True,
+   package_data={'StateSpace': [
+    'data/gradients/*nii.gz',
+    'data/masks/.nii.gz',
+    'data/realTaskNiftis/*.nii.gz'
+    ]
+    }
 )
