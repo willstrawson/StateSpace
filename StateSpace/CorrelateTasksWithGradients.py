@@ -24,12 +24,10 @@ from scipy.stats import zscore
 def getdata():
     # use pkg_resources to access the absolute path for each data subdirectory 
     gradient_subdir = pkg_resources.resource_filename('StateSpace','data/gradients')
-    print (gradient_subdir)
     # then use glob to access a list of files within 
     gradient_paths = sorted(glob.glob(f'{gradient_subdir}/*nii.gz'))
 
     mask_subdir = pkg_resources.resource_filename('StateSpace','data/masks')
-    print (mask_subdir)
     gradient_mask_path = sorted(glob.glob(f'{mask_subdir}/*_cortical.nii.gz'))[0]
 
     task_subdir = pkg_resources.resource_filename('StateSpace','data/realTaskNiftis')
@@ -130,15 +128,13 @@ def corrTasks(outputdir, inputfiles=None, corr_method='spearman', saveMaskedimgs
             corr_dictionary[task_name][grad_name]= corr # add corr value to dict
 
     # store results in transposed dataframe
-
-    
     df = pd.DataFrame(corr_dictionary).T
     df.index.name = 'Task_name'
-    # TODO: Z score column 
+    
     # Z-score each column and create new columns with the suffix '_z'
     for col in df.columns:
         df[col + '_z'] = zscore(df[col])
-        
+
     # save dataframe to csv
     df.to_csv(os.path.join(outputdir,f'gradscores_{corr_method}.csv'))
 
