@@ -20,7 +20,6 @@ import pkg_resources
 from scipy.stats import zscore
 
 
-
 # this function extracts necessary data needed to run corrTasks function (see below)
 def getdata():
     # use pkg_resources to access the absolute path for each data subdirectory 
@@ -36,7 +35,6 @@ def getdata():
 
 
     return gradient_paths, gradient_mask_path, task_paths
-
 
 
 # this function correlates task maps and gradient maps

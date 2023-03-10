@@ -113,8 +113,16 @@ def lesion(
         mapname = map[0]
         map = map[1]
         mapdata = map.get_fdata()
-        mapdata = np.where(fixed_parcelmap == lesionnumber, 0, mapdata)
-        mapnifti = new_img_like(map, mapdata, affine=map.affine)
-        mapnifti.to_filename(os.path.join(outpath, parcel.decode(), mapname))
+        # exclude parcel 
+        mapdata_exclude = np.where(fixed_parcelmap == lesionnumber, 0, mapdata)
+        # include parcel 
+        mapdata_include = np.where(fixed_parcelmap != lesionnumber, 0, mapdata)
+
+        mapnifti = new_img_like(map, mapdata_exclude, affine=map.affine)
+        mapnifti.to_filename(os.path.join(outpath, parcel.decode(), f'ex_{mapname}'))
+        print(f'Saving {os.path.join(outpath, parcel.decode(), mapname)}')
+
+        mapnifti = new_img_like(map, mapdata_include, affine=map.affine)
+        mapnifti.to_filename(os.path.join(outpath, parcel.decode(), f'in_{mapname}'))
         print(f'Saving {os.path.join(outpath, parcel.decode(), mapname)}')
 
