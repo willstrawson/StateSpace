@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 """
 Created on Wed Feb 22 08:17:21 2023
 
@@ -130,7 +131,7 @@ def corrTasks(outputdir, inputfiles=None, corr_method='spearman', saveMaskedimgs
     # store results in transposed dataframe
     df = pd.DataFrame(corr_dictionary).T
     df.index.name = 'Task_name'
-    
+
     # Z-score each column and create new columns with the suffix '_z'
     for col in df.columns:
         df[col + '_z'] = zscore(df[col])
