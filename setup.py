@@ -14,7 +14,8 @@ setup(
    package_data={'StateSpace': [
     'data/gradients/*nii.gz',
     'data/masks/*.nii.gz',
-    'data/realTaskNiftis/*.nii.gz'
+    'data/realTaskNiftis/*.nii.gz',
+    'data/lesionedOutputs/*/*.nii.gz'
     ]
     }
 )
