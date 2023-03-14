@@ -40,18 +40,25 @@ def getdata():
 
 
 # this function correlates task maps and gradient maps
-def corrTasks(outputdir, inputfiles=None, corr_method='spearman', saveMaskedimgs = False):
+def corrTasks(outputdir, inputfiles=None, corr_method='spearman', 
+              saveScores=False, saveMaskedimgs=False, nifti_dict=None):
 
-    # get all the relevent data by calling getdata() function
-    if inputfiles is None:
+    # get all the relevant data by calling getdata() function
+    if inputfiles is None and nifti_dict is None:
         gradient_paths, gradient_mask_path, task_paths = getdata() # Get all the data paths you need
-    elif inputfiles:
+
+    elif inputfiles is not None:
         assert type(inputfiles)==list 
         assert os.path.exists(os.path.dirname(inputfiles[0]))
         print(f"Using {len(inputfiles)} input task maps")
         gradient_paths, gradient_mask_path, task_paths = getdata()
         task_paths = inputfiles
 
+    elif nifti_dict is not None:
+        task_names = list(nifti_dict.keys())
+        print(f"Using {len(task_names)} input task maps from dictionary")
+        gradient_paths, gradient_mask_path, task_paths = getdata()
+        task_paths = task_names
 
     # load mask as nib object once 
     maskimg = nib.load(gradient_mask_path)
@@ -62,17 +69,23 @@ def corrTasks(outputdir, inputfiles=None, corr_method='spearman', saveMaskedimgs
     # loop over each task
     for task in task_paths:
 
-        # load task image and data
-        taskimg = nib.load(task)
+        if nifti_dict is not None:
+            taskimg = nifti_dict[task]
+        else:
+            # load task image and data
+            taskimg = nib.load(task)
 
-        # extract task name from file path
-        task_name = os.path.basename(os.path.normpath(task))
-        task_name = task_name.split(".")[0]
+        # extract task name from file path or dictionary key
+        if nifti_dict is None:
+            task_name = os.path.basename(os.path.normpath(task))
+            task_name = task_name.split(".")[0]
+        else:
+            task_name = task
 
         # apply mask 
         try:
             multmap = nimg.math_img('a*b',a=taskimg, b=maskimg) #element wise multiplication 
-        except ValueError: # if shapes don't match
+        except ValueError: # if shapes don't match
             print('Shapes of images do not match')
             print(f'mask image shape: {maskimg.shape}, task image shape {taskimg.shape}')
             print('Reshaping task to mask image dimensions...')
@@ -81,8 +94,7 @@ def corrTasks(outputdir, inputfiles=None, corr_method='spearman', saveMaskedimgs
 
         # if you want to save masked task images, set to true
         if saveMaskedimgs == True:
-            nib.save(multmap, 
-            os.path.join(outputdir,f'{task_name}_masked.nii.gz'))
+            nib.save(multmap, os.path.join(outputdir,f'{task_name}_masked.nii.gz'))
 
         # turn to numpy array 
         task_array_masked = multmap.get_fdata()
@@ -90,7 +102,7 @@ def corrTasks(outputdir, inputfiles=None, corr_method='spearman', saveMaskedimgs
         # create 1st level dictionary key (task name)
         corr_dictionary[task_name] = {}
 
-        print (task_name)
+        print(task_name)
         print('\n')
 
         # Iterate through each of Neurovault's gradients
@@ -99,7 +111,7 @@ def corrTasks(outputdir, inputfiles=None, corr_method='spearman', saveMaskedimgs
             grad_name = os.path.basename(os.path.normpath(gradient))
             grad_name = grad_name.split(".")[0]
 
-            print (grad_name)
+            print(grad_name)
 
             # load gradient
             gradientimg = nib.load(gradient)                
@@ -137,7 +149,8 @@ def corrTasks(outputdir, inputfiles=None, corr_method='spearman', saveMaskedimgs
         df[col + '_z'] = zscore(df[col])
 
     # save dataframe to csv
-    df.to_csv(os.path.join(outputdir,f'gradscores_{corr_method}.csv'))
+    if saveScores == True:
+        df.to_csv(os.path.join(outputdir,f'gradscores_{corr_method}.csv'))
 
     return df
 
