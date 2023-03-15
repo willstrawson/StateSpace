@@ -160,7 +160,7 @@ def corrTasks(
     # create dataframe
     if GroupLevelMaps == False:
         df = pd.DataFrame({'sub_ID': subids,'run': runids, "gradient": gradientids, "input_map" : taskids ,"correlation": correlations})
-        df[gradient + '_z'] = zscore(df[gradient])
+
         df.to_csv(os.path.join(outputdir,f'gradscores_{corr_method}.csv'))
         return df
 
@@ -174,8 +174,6 @@ def corrTasks(
         
         df_wide.to_csv(os.path.join(outputdir,f'gradscores_{corr_method}.csv'))
         return df_wide
-
-
 
 
 
