@@ -40,11 +40,26 @@ def getdata():
 
 
 # this function correlates task maps and gradient maps
-def corrTasks(outputdir, inputfiles=None, corr_method='spearman', saveMaskedimgs = False):
+def corrTasks(
+    outputdir, 
+    inputfiles=None, 
+    corr_method='spearman', 
+    saveMaskedimgs = False, 
+    GroupLevelMaps=True):
+
+    # initialize empty lists to store values
+    taskids = []
+    gradientids = []
+    correlations = [] 
+
+    subids = []
+    runids=[]
+
 
     # get all the relevent data by calling getdata() function
     if inputfiles is None:
         gradient_paths, gradient_mask_path, task_paths = getdata() # Get all the data paths you need
+
     elif inputfiles:
         assert type(inputfiles)==list 
         assert os.path.exists(os.path.dirname(inputfiles[0]))
@@ -62,12 +77,17 @@ def corrTasks(outputdir, inputfiles=None, corr_method='spearman', saveMaskedimgs
     # loop over each task
     for task in task_paths:
 
+        # TODO: If using maps from individual subjects (group level maps = False), extract subid and other important information
+
         # load task image and data
         taskimg = nib.load(task)
 
         # extract task name from file path
         task_name = os.path.basename(os.path.normpath(task))
         task_name = task_name.split(".")[0]
+
+        if GroupLevelMaps==False:
+            subid, runid = subidrunid(task)
 
         # apply mask 
         try:
@@ -125,20 +145,50 @@ def corrTasks(outputdir, inputfiles=None, corr_method='spearman', saveMaskedimgs
             #plt.scatter(gradient_array.flatten(), task_array_masked.flatten(), marker='.')
             #plt.savefig(os.path.join(repo_path,f'scratch/plots/{task_name}_{gradnumber}_scatter.png'))
             #plt.close()
+            corr_dictionary[task_name][grad_name] = corr # add corr value to dict
 
-            corr_dictionary[task_name][grad_name]= corr # add corr value to dict
+            # add necessary values to lists 
 
-    # store results in transposed dataframe
-    df = pd.DataFrame(corr_dictionary).T
-    df.index.name = 'Task_name'
+            taskids.append(task_name)
+            gradientids.append(grad_name)
+            correlations.append(corr)
 
-    # Z-score each column and create new columns with the suffix '_z'
-    for col in df.columns:
-        df[col + '_z'] = zscore(df[col])
+            if GroupLevelMaps == False:
+                subids.append(subid)
+                runids.append(runid)
+            
+    # create dataframe
+    if GroupLevelMaps == False:
+        df = pd.DataFrame({'sub_ID': subids,'run': runids, "gradient": gradientids, "input_map" : taskids ,"correlation": correlations})
+        df[gradient + '_z'] = zscore(df[gradient])
+        df.to_csv(os.path.join(outputdir,f'gradscores_{corr_method}.csv'))
+        return df
 
-    # save dataframe to csv
-    df.to_csv(os.path.join(outputdir,f'gradscores_{corr_method}.csv'))
 
-    return df
+    else:
+        df = pd.DataFrame({"input_map" : taskids, "gradient": gradientids, "correlation": correlations})
+        df_wide=pd.pivot(df, index=['input_map'], columns = 'gradient', values = 'correlation') #Reshape from long to wide
+        # Z-score each column and create new columns with the suffix '_z'
+        for col in df_wide.columns:
+            df_wide[col + '_z'] = zscore(df_wide[col])
+        
+        df_wide.to_csv(os.path.join(outputdir,f'gradscores_{corr_method}.csv'))
+        return df_wide
+
+
+
+
+
+def subidrunid(pth):
+    """
+    Function to extract subid and sesid from path
+    """
+    print('Warning: Assumes BIDS data structure.')
+    splits = pth.split('/')[:-1] # extract every part of path except filename
+    subid = [i for i in splits if 'sub-' in i]
+    runid = [i for i in splits if 'run-' in i]
+    assert len(subid) !=0
+    assert len(runid) !=0
+    return subid[0],runid[0]
 
 
