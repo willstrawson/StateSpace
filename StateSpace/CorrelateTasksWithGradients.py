@@ -12,7 +12,7 @@ Contains functions to correlate tasks in task battery with gradients.
 import nibabel as nib
 from nilearn import image as nimg
 import glob
-from scipy.stats import spearmanr, pearsonr
+from scipy.stats import spearmanr, pearsonr, shapiro
 import os 
 import pandas as pd
 import numpy as np
@@ -206,5 +206,44 @@ def subidrunid(pth):
     assert len(subid) !=0
     assert len(runid) !=0
     return subid[0],runid[0]
+
+
+def TestForZmapNormality(inputfiles, outputpath):
+    gradient_paths, gradient_mask_path, task_paths = getdata() # Get all the data paths you need
+
+    # initialize empty lists to store values
+    taskids = []
+    subids = []
+    runids = []
+    shapirowilks = []
+
+    for task in inputfiles:
+        # load task image and data
+        taskimg = nib.load(task)
+
+        # extract task name from file path
+        task_name = os.path.basename(os.path.normpath(task))
+        task_name = task_name.split(".")[0]
+        
+        subid, runid = subidrunid(task)
+
+        # turn to numpy array 
+        task_array_flat = taskimg.get_fdata().flatten()
+        
+        # get p value, where significant == NOT normally distributed 
+        _, pvalue1 = shapiro(task_array_flat)
+
+        # add necssary valus to lists 
+        taskids.append(task_name)
+        subids.append(subid)
+        runids.append(runids)
+        shapirowilks.append(pvalue1)
+    
+    df = pd.DataFrame({'sub_ID':subids,'run': runids, "input_map" : taskids ,"ShapiroP": pvalue1})
+
+    df.to_csv(outputpath)
+
+
+
 
 
