@@ -18,6 +18,7 @@ import pandas as pd
 import numpy as np
 import pkg_resources
 from scipy.stats import zscore
+import subprocess
 
 
 
@@ -51,6 +52,8 @@ def corrTasks(
     taskids = []
     gradientids = []
     correlations = [] 
+    fcorrelations = []
+    fslcc_correlations = []
 
     subids = []
     runids=[]
@@ -98,6 +101,8 @@ def corrTasks(
             print('Reshaping task to mask image dimensions...')
             taskimg = nimg.resample_to_img(source_img=taskimg,target_img=maskimg,interpolation='nearest')
             multmap = nimg.math_img('a*b',a=taskimg, b=maskimg) #element wise multiplication 
+            newtask = f"/home/ws231/Downloads/repos/vibe_multivariate/scratch/{subid}_{runid.replace('.feat','')}_{task_name}.nii.gz"
+            nib.save(taskimg, newtask)
 
         # if you want to save masked task images, set to true
         if saveMaskedimgs == True:
@@ -134,24 +139,37 @@ def corrTasks(
             elif corr_method == 'pearson':
                 corr = pearsonr(gradient_array.flatten(), task_array_masked.flatten())[0]
 
+            # us fsl cc to compare 
+
+            fslcc = f'fslcc --noabs -m {gradient_mask_path} -t -1 {gradient} {newtask}'
+            print(f'{gradient_mask_path}\n{gradient}\n{newtask}')
+            # this runs the fsl command above
+            p = subprocess.run(fslcc,shell=True, capture_output=True, text = True)
+            print(p)
+            fslcc_corr = p.stdout.split(' ')[6].strip('\n') #TOD0:hardcode 6?
+
+
             print ("Raw correlation:",corr)
 
             # apply fishers-r-to-z transformation to correlation value
-            corr = np.arctanh(corr)
+            fcorr = np.arctanh(corr)
 
-            print ("Fisher r-to-z transformed correlation:",corr)
+            print ("Fisher r-to-z transformed correlation:",fcorr)
+            print('FSLCC:',fslcc_corr)
 
             # plot correlation of flattened arrays [mostly for testing but keeping for now]
             #plt.scatter(gradient_array.flatten(), task_array_masked.flatten(), marker='.')
             #plt.savefig(os.path.join(repo_path,f'scratch/plots/{task_name}_{gradnumber}_scatter.png'))
             #plt.close()
-            corr_dictionary[task_name][grad_name] = corr # add corr value to dict
 
             # add necessary values to lists 
 
             taskids.append(task_name)
             gradientids.append(grad_name)
-            correlations.append(corr)
+            correlations.append(np.round(corr,2))
+            fcorrelations.append(np.round(fcorr,2))
+            fslcc_correlations.append(fslcc_corr)
+
 
             if GroupLevelMaps == False:
                 subids.append(subid)
@@ -159,15 +177,15 @@ def corrTasks(
             
     # create dataframe
     if GroupLevelMaps == False:
-        df = pd.DataFrame({'sub_ID': subids,'run': runids, "gradient": gradientids, "input_map" : taskids ,"correlation": correlations})
+        df = pd.DataFrame({'sub_ID':subids,'run': runids, "gradient": gradientids, "input_map" : taskids ,"correlation": correlations, "fisher_correlation":fcorrelations,"fslcc_correlation":fslcc_correlations})
 
         df.to_csv(os.path.join(outputdir,f'gradscores_{corr_method}.csv'))
         return df
 
 
     else:
-        df = pd.DataFrame({"input_map" : taskids, "gradient": gradientids, "correlation": correlations})
-        df_wide=pd.pivot(df, index=['input_map'], columns = 'gradient', values = 'correlation') #Reshape from long to wide
+        df = pd.DataFrame({"input_map" : taskids, "gradient": gradientids, "fisher_correlation": fcorrelations})
+        df_wide=pd.pivot(df, index=['input_map'], columns = 'gradient', values = "fisher_correlation") #Reshape from long to wide
         # Z-score each column and create new columns with the suffix '_z'
         for col in df_wide.columns:
             df_wide[col + '_z'] = zscore(df_wide[col])
