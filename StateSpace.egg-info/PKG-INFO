@@ -1,10 +1,6 @@
-Metadata-Version: 1.0
+Metadata-Version: 2.1
 Name: StateSpace
 Version: 0.0.1
 Summary: Package of functions to calculate gradient correlations for task battery maps.
-Home-page: UNKNOWN
 Author: Bronte Mckeown & Will Strawson
 Author-email: bronte.mckeown@gmail.com
-License: UNKNOWN
-Description: UNKNOWN
-Platform: UNKNOWN

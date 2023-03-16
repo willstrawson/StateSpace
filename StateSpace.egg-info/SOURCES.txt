@@ -13,6 +13,141 @@ StateSpace/data/gradients/gradient2.nii.gz
 StateSpace/data/gradients/gradient3.nii.gz
 StateSpace/data/gradients/gradient4.nii.gz
 StateSpace/data/gradients/gradient5.nii.gz
+StateSpace/data/lesionedOutputs/Default/easyMath.nii.gz
+StateSpace/data/lesionedOutputs/Default/fingerTapping.nii.gz
+StateSpace/data/lesionedOutputs/Default/friend.nii.gz
+StateSpace/data/lesionedOutputs/Default/gonogo.nii.gz
+StateSpace/data/lesionedOutputs/Default/gradient1.nii.gz
+StateSpace/data/lesionedOutputs/Default/gradient2.nii.gz
+StateSpace/data/lesionedOutputs/Default/gradient3.nii.gz
+StateSpace/data/lesionedOutputs/Default/gradient4.nii.gz
+StateSpace/data/lesionedOutputs/Default/gradient5.nii.gz
+StateSpace/data/lesionedOutputs/Default/hardMath.nii.gz
+StateSpace/data/lesionedOutputs/Default/memory.nii.gz
+StateSpace/data/lesionedOutputs/Default/movieBridge.nii.gz
+StateSpace/data/lesionedOutputs/Default/movieIncept.nii.gz
+StateSpace/data/lesionedOutputs/Default/oneBack.nii.gz
+StateSpace/data/lesionedOutputs/Default/reading.nii.gz
+StateSpace/data/lesionedOutputs/Default/twoBackFaces.nii.gz
+StateSpace/data/lesionedOutputs/Default/twoBackScenes.nii.gz
+StateSpace/data/lesionedOutputs/Default/you.nii.gz
+StateSpace/data/lesionedOutputs/Default/zeroBack.nii.gz
+StateSpace/data/lesionedOutputs/Dorsal Attention/easyMath.nii.gz
+StateSpace/data/lesionedOutputs/Dorsal Attention/fingerTapping.nii.gz
+StateSpace/data/lesionedOutputs/Dorsal Attention/friend.nii.gz
+StateSpace/data/lesionedOutputs/Dorsal Attention/gonogo.nii.gz
+StateSpace/data/lesionedOutputs/Dorsal Attention/gradient1.nii.gz
+StateSpace/data/lesionedOutputs/Dorsal Attention/gradient2.nii.gz
+StateSpace/data/lesionedOutputs/Dorsal Attention/gradient3.nii.gz
+StateSpace/data/lesionedOutputs/Dorsal Attention/gradient4.nii.gz
+StateSpace/data/lesionedOutputs/Dorsal Attention/gradient5.nii.gz
+StateSpace/data/lesionedOutputs/Dorsal Attention/hardMath.nii.gz
+StateSpace/data/lesionedOutputs/Dorsal Attention/memory.nii.gz
+StateSpace/data/lesionedOutputs/Dorsal Attention/movieBridge.nii.gz
+StateSpace/data/lesionedOutputs/Dorsal Attention/movieIncept.nii.gz
+StateSpace/data/lesionedOutputs/Dorsal Attention/oneBack.nii.gz
+StateSpace/data/lesionedOutputs/Dorsal Attention/reading.nii.gz
+StateSpace/data/lesionedOutputs/Dorsal Attention/twoBackFaces.nii.gz
+StateSpace/data/lesionedOutputs/Dorsal Attention/twoBackScenes.nii.gz
+StateSpace/data/lesionedOutputs/Dorsal Attention/you.nii.gz
+StateSpace/data/lesionedOutputs/Dorsal Attention/zeroBack.nii.gz
+StateSpace/data/lesionedOutputs/Frontoparietal/easyMath.nii.gz
+StateSpace/data/lesionedOutputs/Frontoparietal/fingerTapping.nii.gz
+StateSpace/data/lesionedOutputs/Frontoparietal/friend.nii.gz
+StateSpace/data/lesionedOutputs/Frontoparietal/gonogo.nii.gz
+StateSpace/data/lesionedOutputs/Frontoparietal/gradient1.nii.gz
+StateSpace/data/lesionedOutputs/Frontoparietal/gradient2.nii.gz
+StateSpace/data/lesionedOutputs/Frontoparietal/gradient3.nii.gz
+StateSpace/data/lesionedOutputs/Frontoparietal/gradient4.nii.gz
+StateSpace/data/lesionedOutputs/Frontoparietal/gradient5.nii.gz
+StateSpace/data/lesionedOutputs/Frontoparietal/hardMath.nii.gz
+StateSpace/data/lesionedOutputs/Frontoparietal/memory.nii.gz
+StateSpace/data/lesionedOutputs/Frontoparietal/movieBridge.nii.gz
+StateSpace/data/lesionedOutputs/Frontoparietal/movieIncept.nii.gz
+StateSpace/data/lesionedOutputs/Frontoparietal/oneBack.nii.gz
+StateSpace/data/lesionedOutputs/Frontoparietal/reading.nii.gz
+StateSpace/data/lesionedOutputs/Frontoparietal/twoBackFaces.nii.gz
+StateSpace/data/lesionedOutputs/Frontoparietal/twoBackScenes.nii.gz
+StateSpace/data/lesionedOutputs/Frontoparietal/you.nii.gz
+StateSpace/data/lesionedOutputs/Frontoparietal/zeroBack.nii.gz
+StateSpace/data/lesionedOutputs/Limbic/easyMath.nii.gz
+StateSpace/data/lesionedOutputs/Limbic/fingerTapping.nii.gz
+StateSpace/data/lesionedOutputs/Limbic/friend.nii.gz
+StateSpace/data/lesionedOutputs/Limbic/gonogo.nii.gz
+StateSpace/data/lesionedOutputs/Limbic/gradient1.nii.gz
+StateSpace/data/lesionedOutputs/Limbic/gradient2.nii.gz
+StateSpace/data/lesionedOutputs/Limbic/gradient3.nii.gz
+StateSpace/data/lesionedOutputs/Limbic/gradient4.nii.gz
+StateSpace/data/lesionedOutputs/Limbic/gradient5.nii.gz
+StateSpace/data/lesionedOutputs/Limbic/hardMath.nii.gz
+StateSpace/data/lesionedOutputs/Limbic/memory.nii.gz
+StateSpace/data/lesionedOutputs/Limbic/movieBridge.nii.gz
+StateSpace/data/lesionedOutputs/Limbic/movieIncept.nii.gz
+StateSpace/data/lesionedOutputs/Limbic/oneBack.nii.gz
+StateSpace/data/lesionedOutputs/Limbic/reading.nii.gz
+StateSpace/data/lesionedOutputs/Limbic/twoBackFaces.nii.gz
+StateSpace/data/lesionedOutputs/Limbic/twoBackScenes.nii.gz
+StateSpace/data/lesionedOutputs/Limbic/you.nii.gz
+StateSpace/data/lesionedOutputs/Limbic/zeroBack.nii.gz
+StateSpace/data/lesionedOutputs/Somatomotor/easyMath.nii.gz
+StateSpace/data/lesionedOutputs/Somatomotor/fingerTapping.nii.gz
+StateSpace/data/lesionedOutputs/Somatomotor/friend.nii.gz
+StateSpace/data/lesionedOutputs/Somatomotor/gonogo.nii.gz
+StateSpace/data/lesionedOutputs/Somatomotor/gradient1.nii.gz
+StateSpace/data/lesionedOutputs/Somatomotor/gradient2.nii.gz
+StateSpace/data/lesionedOutputs/Somatomotor/gradient3.nii.gz
+StateSpace/data/lesionedOutputs/Somatomotor/gradient4.nii.gz
+StateSpace/data/lesionedOutputs/Somatomotor/gradient5.nii.gz
+StateSpace/data/lesionedOutputs/Somatomotor/hardMath.nii.gz
+StateSpace/data/lesionedOutputs/Somatomotor/memory.nii.gz
+StateSpace/data/lesionedOutputs/Somatomotor/movieBridge.nii.gz
+StateSpace/data/lesionedOutputs/Somatomotor/movieIncept.nii.gz
+StateSpace/data/lesionedOutputs/Somatomotor/oneBack.nii.gz
+StateSpace/data/lesionedOutputs/Somatomotor/reading.nii.gz
+StateSpace/data/lesionedOutputs/Somatomotor/twoBackFaces.nii.gz
+StateSpace/data/lesionedOutputs/Somatomotor/twoBackScenes.nii.gz
+StateSpace/data/lesionedOutputs/Somatomotor/you.nii.gz
+StateSpace/data/lesionedOutputs/Somatomotor/zeroBack.nii.gz
+StateSpace/data/lesionedOutputs/Ventral Attention/easyMath.nii.gz
+StateSpace/data/lesionedOutputs/Ventral Attention/fingerTapping.nii.gz
+StateSpace/data/lesionedOutputs/Ventral Attention/friend.nii.gz
+StateSpace/data/lesionedOutputs/Ventral Attention/gonogo.nii.gz
+StateSpace/data/lesionedOutputs/Ventral Attention/gradient1.nii.gz
+StateSpace/data/lesionedOutputs/Ventral Attention/gradient2.nii.gz
+StateSpace/data/lesionedOutputs/Ventral Attention/gradient3.nii.gz
+StateSpace/data/lesionedOutputs/Ventral Attention/gradient4.nii.gz
+StateSpace/data/lesionedOutputs/Ventral Attention/gradient5.nii.gz
+StateSpace/data/lesionedOutputs/Ventral Attention/hardMath.nii.gz
+StateSpace/data/lesionedOutputs/Ventral Attention/memory.nii.gz
+StateSpace/data/lesionedOutputs/Ventral Attention/movieBridge.nii.gz
+StateSpace/data/lesionedOutputs/Ventral Attention/movieIncept.nii.gz
+StateSpace/data/lesionedOutputs/Ventral Attention/oneBack.nii.gz
+StateSpace/data/lesionedOutputs/Ventral Attention/reading.nii.gz
+StateSpace/data/lesionedOutputs/Ventral Attention/twoBackFaces.nii.gz
+StateSpace/data/lesionedOutputs/Ventral Attention/twoBackScenes.nii.gz
+StateSpace/data/lesionedOutputs/Ventral Attention/you.nii.gz
+StateSpace/data/lesionedOutputs/Ventral Attention/zeroBack.nii.gz
+StateSpace/data/lesionedOutputs/Visual/easyMath.nii.gz
+StateSpace/data/lesionedOutputs/Visual/fingerTapping.nii.gz
+StateSpace/data/lesionedOutputs/Visual/friend.nii.gz
+StateSpace/data/lesionedOutputs/Visual/gonogo.nii.gz
+StateSpace/data/lesionedOutputs/Visual/gradient1.nii.gz
+StateSpace/data/lesionedOutputs/Visual/gradient2.nii.gz
+StateSpace/data/lesionedOutputs/Visual/gradient3.nii.gz
+StateSpace/data/lesionedOutputs/Visual/gradient4.nii.gz
+StateSpace/data/lesionedOutputs/Visual/gradient5.nii.gz
+StateSpace/data/lesionedOutputs/Visual/hardMath.nii.gz
+StateSpace/data/lesionedOutputs/Visual/memory.nii.gz
+StateSpace/data/lesionedOutputs/Visual/movieBridge.nii.gz
+StateSpace/data/lesionedOutputs/Visual/movieIncept.nii.gz
+StateSpace/data/lesionedOutputs/Visual/oneBack.nii.gz
+StateSpace/data/lesionedOutputs/Visual/reading.nii.gz
+StateSpace/data/lesionedOutputs/Visual/twoBackFaces.nii.gz
+StateSpace/data/lesionedOutputs/Visual/twoBackScenes.nii.gz
+StateSpace/data/lesionedOutputs/Visual/you.nii.gz
+StateSpace/data/lesionedOutputs/Visual/zeroBack.nii.gz
+StateSpace/data/masks/gradientmask_combo.nii.gz
+StateSpace/data/masks/gradientmask_cortical.nii.gz
 StateSpace/data/realTaskNiftis/easyMath.nii.gz
 StateSpace/data/realTaskNiftis/fingerTapping.nii.gz
 StateSpace/data/realTaskNiftis/friend.nii.gz
