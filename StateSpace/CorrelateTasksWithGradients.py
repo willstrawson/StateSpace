@@ -20,42 +20,41 @@ import pkg_resources
 from scipy.stats import zscore
 
 
-
 # this function extracts necessary data needed to run corrTasks function (see below)
-def getdata():
+def getdata(mask_name):
     # use pkg_resources to access the absolute path for each data subdirectory 
     gradient_subdir = pkg_resources.resource_filename('StateSpace','data/gradients')
     # then use glob to access a list of files within 
     gradient_paths = sorted(glob.glob(f'{gradient_subdir}/*nii.gz'))
 
     mask_subdir = pkg_resources.resource_filename('StateSpace','data/masks')
-    gradient_mask_path = sorted(glob.glob(f'{mask_subdir}/*_cortical.nii.gz'))[0]
+    mask_path = sorted(glob.glob(f'{mask_subdir}/{mask_name}.nii.gz'))[0]
 
     task_subdir = pkg_resources.resource_filename('StateSpace','data/realTaskNiftis')
     task_paths = sorted(glob.glob(f'{task_subdir}/*nii.gz'))
 
 
-    return gradient_paths, gradient_mask_path, task_paths
-
+    return gradient_paths, mask_path, task_paths
 
 
 # this function correlates task maps and gradient maps
-def corrTasks(outputdir=None, inputfiles=None, corr_method='spearman', saveMaskedimgs = False,verbose=-1,z_score=True):
+def corrTasks(mask_name, outputdir=None, inputfiles=None,
+              corr_method='spearman',saveMaskedimgs = False,verbose=-1,z_score=False):
 
     # get all the relevent data by calling getdata() function
     if inputfiles is None:
-        gradient_paths, gradient_mask_path, task_paths = getdata() # Get all the data paths you need
+        # Get all the data paths you need
+        gradient_paths, mask_path, task_paths = getdata(mask_name) 
     elif inputfiles:
         assert type(inputfiles)==list 
         assert os.path.exists(os.path.dirname(inputfiles[0]))
         if verbose > 0:
             print(f"Using {len(inputfiles)} input task maps")
-        gradient_paths, gradient_mask_path, task_paths = getdata()
+        gradient_paths, mask_path, task_paths = getdata(mask_name)
         task_paths = inputfiles
 
-
     # load mask as nib object once 
-    maskimg = nib.load(gradient_mask_path)
+    maskimg = nib.load(mask_path)
 
     # create empty dictionary to store correlation values in
     corr_dictionary = {}
@@ -103,10 +102,13 @@ def corrTasks(outputdir=None, inputfiles=None, corr_method='spearman', saveMaske
                 print (grad_name)
 
             # load gradient
-            gradientimg = nib.load(gradient)                
+            gradientimg = nib.load(gradient)
+
+            # apply mask to gradient
+            gradientimg_m = nimg.math_img('a*b',a=gradientimg, b=maskimg)                
 
             # Get the gradient image data as a numpy array
-            gradient_array = gradientimg.get_fdata()
+            gradient_array = gradientimg_m.get_fdata()
 
             # correlate task map and gradients 
             if corr_method == 'spearman':
@@ -136,14 +138,14 @@ def corrTasks(outputdir=None, inputfiles=None, corr_method='spearman', saveMaske
     if z_score:
         # Z-score each column and create new columns with the suffix '_z'
         for col in df.columns:
-            zsc_df[col] = zscore(df[col])
+            zsc_df[f'Z{col}'] = zscore(df[col])
         if outputdir != None:
-            zsc_df.to_csv(os.path.join(outputdir,f'gradscores_{corr_method}.csv'))
+            zsc_df.to_csv(os.path.join(outputdir,f'Zgradscores_{corr_method}_{mask_name}.csv'))
         return zsc_df
 
     # save dataframe to csv
     if outputdir != None:
-        df.to_csv(os.path.join(outputdir,f'gradscores_{corr_method}.csv'))
+        df.to_csv(os.path.join(outputdir,f'gradscores_{corr_method}_{mask_name}.csv'))
 
     return df
 
