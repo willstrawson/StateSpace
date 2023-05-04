@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 '''
-Create binarized mask from nifti image 
+Correlate task maps with Gradients to produce state-space coordinates.
 
 '''
 import glob
