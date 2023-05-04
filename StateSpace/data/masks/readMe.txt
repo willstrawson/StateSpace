@@ -1,1 +1,1 @@
-Binarized mask made by calling CreateBinarizedMask.binMask()
+Binarized masks made by calling CreateBinarizedMask.binMask()
