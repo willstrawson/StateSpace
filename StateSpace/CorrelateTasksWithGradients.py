@@ -39,7 +39,7 @@ def getdata(mask_name):
 
 # this function correlates task maps and gradient maps
 def corrTasks(mask_name, outputdir=None, inputfiles=None,
-              corr_method='spearman',saveMaskedimgs = False,verbose=-1,z_score=False):
+              corr_method='spearman', saveMaskedimgs = False,verbose=-1,z_score=False):
 
     # get all the relevent data by calling getdata() function
     if inputfiles is None:
@@ -113,21 +113,15 @@ def corrTasks(mask_name, outputdir=None, inputfiles=None,
             # correlate task map and gradients 
             if corr_method == 'spearman':
                 corr = spearmanr(gradient_array.flatten(), task_array_masked.flatten())[0]
+                if verbose > 0:
+                    print ("Spearman correlation:",corr)
 
             elif corr_method == 'pearson':
                 corr = pearsonr(gradient_array.flatten(), task_array_masked.flatten())[0]
-            if verbose > 0:
-                print ("Raw correlation:",corr)
-
-            # apply fishers-r-to-z transformation to correlation value
-            corr = np.arctanh(corr)
-            if verbose > 0:
-                print ("Fisher r-to-z transformed correlation:",corr)
-
-            # plot correlation of flattened arrays [mostly for testing but keeping for now]
-            #plt.scatter(gradient_array.flatten(), task_array_masked.flatten(), marker='.')
-            #plt.savefig(os.path.join(repo_path,f'scratch/plots/{task_name}_{gradnumber}_scatter.png'))
-            #plt.close()
+		        # apply fishers-r-to-z transformation to correlation value
+                # corr = np.arctanh(corr)
+                if verbose > 0:
+                    print ("Pearson (Fisher r-to-z transformed) correlation:",corr)
 
             corr_dictionary[task_name][grad_name]= corr # add corr value to dict
 
