@@ -21,11 +21,14 @@ from scipy.stats import zscore
 
 
 # this function extracts necessary data needed to run corrTasks function (see below)
-def getdata(mask_name):
+def getdata(mask_name, map_coverage):
     # use pkg_resources to access the absolute path for each data subdirectory 
     gradient_subdir = pkg_resources.resource_filename('StateSpace','data/gradients')
-    # then use glob to access a list of files within 
-    gradient_paths = sorted(glob.glob(f'{gradient_subdir}/*nii.gz'))
+    # then use glob to access a list of files within
+    if map_coverage == 'cortical_only':
+        gradient_paths = sorted(glob.glob(f'{gradient_subdir}/*cortical_only.nii.gz'))
+    elif map_coverage == 'all':
+        gradient_paths = sorted(glob.glob(f'{gradient_subdir}/*subcortical.nii.gz'))
 
     mask_subdir = pkg_resources.resource_filename('StateSpace','data/masks')
     mask_path = sorted(glob.glob(f'{mask_subdir}/{mask_name}.nii.gz'))[0]
@@ -33,24 +36,23 @@ def getdata(mask_name):
     task_subdir = pkg_resources.resource_filename('StateSpace','data/realTaskNiftis')
     task_paths = sorted(glob.glob(f'{task_subdir}/*nii.gz'))
 
-
     return gradient_paths, mask_path, task_paths
 
 
 # this function correlates task maps and gradient maps
-def corrTasks(mask_name, outputdir=None, inputfiles=None,
+def corrTasks(mask_name, map_coverage, outputdir=None, inputfiles=None,
               corr_method='spearman', saveMaskedimgs = False,verbose=-1,z_score=False):
 
     # get all the relevent data by calling getdata() function
     if inputfiles is None:
         # Get all the data paths you need
-        gradient_paths, mask_path, task_paths = getdata(mask_name) 
+        gradient_paths, mask_path, task_paths = getdata(mask_name, map_coverage) 
     elif inputfiles:
         assert type(inputfiles)==list 
         assert os.path.exists(os.path.dirname(inputfiles[0]))
         if verbose > 0:
             print(f"Using {len(inputfiles)} input task maps")
-        gradient_paths, mask_path, task_paths = getdata(mask_name)
+        gradient_paths, mask_path, task_paths = getdata(mask_name, map_coverage)
         task_paths = inputfiles
 
     # load mask as nib object once 

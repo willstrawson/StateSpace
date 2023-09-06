@@ -9,11 +9,26 @@ import glob
 import os
 import pkg_resources
 
-def binMask(method):
+def binMask(method, map_coverage):  # sourcery skip: extract-method
+    """
+    Creates and saves binary mask based on specified method and map coverage.
 
-    gradient_subdir = pkg_resources.resource_filename('StateSpace','data/gradients')
-    gradient_paths = sorted(glob.glob(f'{gradient_subdir}/*nii.gz'))
+    Args:
+        method (str): The method to use for creating masks. Options include 'grad_only' and 'all_maps'.
+        map_coverage (str): The coverage you want to use. Options include 'cortical_only' and 'all'.
+
+    Returns:
+        None.
     
+    Mask is saved to data/masks directory.
+
+    """
+    gradient_subdir = pkg_resources.resource_filename('StateSpace','data/gradients')
+    if map_coverage == 'cortical_only':
+        gradient_paths = sorted(glob.glob(f'{gradient_subdir}/*cortical.nii.gz'))
+    elif map_coverage == 'all':
+        gradient_paths = sorted(glob.glob(f'{gradient_subdir}/*subcortical.nii.gz'))
+
     if method == 'grad_only':
 
         mask_list = []
@@ -32,8 +47,12 @@ def binMask(method):
         if np.array_equal(mask_list[0],mask_list[1]):
             maskdir=pkg_resources.resource_filename('StateSpace', 'data/masks')
             # NOTE: See how we used the affine arg? this resolved weird aligmennt issue
-            nib.save(nib.Nifti1Image(mask_list[0], affine=nib.load(brain_map).affine), 
-            os.path.join(maskdir,'gradientmask_cortical.nii.gz'))
+            if map_coverage == 'cortical_only':
+                nib.save(nib.Nifti1Image(mask_list[0], affine=nib.load(brain_map).affine), 
+                os.path.join(maskdir,'gradientmask_cortical.nii.gz'))
+            elif map_coverage == 'all':
+                nib.save(nib.Nifti1Image(mask_list[0], affine=nib.load(brain_map).affine), 
+                os.path.join(maskdir,'gradientmask_cortical_subcortical.nii.gz'))
         else:
             print('Gradient 1 and 2 mask arrays do not match.')
             
@@ -64,11 +83,9 @@ def binMask(method):
             
         # Save final mask
         maskdir=pkg_resources.resource_filename('StateSpace', 'data/masks')
-        nib.save(nib.Nifti1Image(combined_mask, affine=nib.load(brain_map).affine), 
+        if map_coverage == 'cortical_only':
+            nib.save(nib.Nifti1Image(combined_mask, affine=nib.load(brain_map).affine), 
                  os.path.join(maskdir,'combinedmask_cortical.nii.gz'))
-
-        
-        
-        
-        
-        
+        elif map_coverage == 'all':
+            nib.save(nib.Nifti1Image(combined_mask, affine=nib.load(brain_map).affine), 
+                 os.path.join(maskdir,'combinedmask_cortical_subcortical.nii.gz'))

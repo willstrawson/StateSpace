@@ -21,11 +21,14 @@ from scipy.stats import zscore
 
 
 # this function extracts necessary data needed to run corrTasks function (see below)
-def getdata(mask_name):
+def getdata(mask_name, map_coverage):
     # use pkg_resources to access the absolute path for each data subdirectory 
     gradient_subdir = pkg_resources.resource_filename('StateSpace','data/gradients')
-    # then use glob to access a list of files within 
-    gradient_paths = sorted(glob.glob(f'{gradient_subdir}/*nii.gz'))
+    # then use glob to access a list of files within
+    if map_coverage == 'cortical_only':
+        gradient_paths = sorted(glob.glob(f'{gradient_subdir}/*cortical.nii.gz'))
+    elif map_coverage == 'all':
+        gradient_paths = sorted(glob.glob(f'{gradient_subdir}/*subcortical.nii.gz'))
 
     mask_subdir = pkg_resources.resource_filename('StateSpace','data/masks')
     mask_path = sorted(glob.glob(f'{mask_subdir}/{mask_name}.nii.gz'))[0]
@@ -33,24 +36,23 @@ def getdata(mask_name):
     task_subdir = pkg_resources.resource_filename('StateSpace','data/realTaskNiftis')
     task_paths = sorted(glob.glob(f'{task_subdir}/*nii.gz'))
 
-
     return gradient_paths, mask_path, task_paths
 
 
 # this function correlates task maps and gradient maps
-def corrTasks(mask_name, outputdir=None, inputfiles=None,
-              corr_method='spearman',saveMaskedimgs = False,verbose=-1,z_score=False):
+def corrTasks(mask_name, map_coverage, outputdir=None, inputfiles=None,
+              corr_method='spearman', saveMaskedimgs = False,verbose=-1,z_score=False):
 
     # get all the relevent data by calling getdata() function
     if inputfiles is None:
         # Get all the data paths you need
-        gradient_paths, mask_path, task_paths = getdata(mask_name) 
+        gradient_paths, mask_path, task_paths = getdata(mask_name, map_coverage) 
     elif inputfiles:
         assert type(inputfiles)==list 
         assert os.path.exists(os.path.dirname(inputfiles[0]))
         if verbose > 0:
             print(f"Using {len(inputfiles)} input task maps")
-        gradient_paths, mask_path, task_paths = getdata(mask_name)
+        gradient_paths, mask_path, task_paths = getdata(mask_name, map_coverage)
         task_paths = inputfiles
 
     # load mask as nib object once 
@@ -113,21 +115,15 @@ def corrTasks(mask_name, outputdir=None, inputfiles=None,
             # correlate task map and gradients 
             if corr_method == 'spearman':
                 corr = spearmanr(gradient_array.flatten(), task_array_masked.flatten())[0]
+                if verbose > 0:
+                    print ("Spearman correlation:",corr)
 
             elif corr_method == 'pearson':
                 corr = pearsonr(gradient_array.flatten(), task_array_masked.flatten())[0]
-            if verbose > 0:
-                print ("Raw correlation:",corr)
-
-            # apply fishers-r-to-z transformation to correlation value
-            corr = np.arctanh(corr)
-            if verbose > 0:
-                print ("Fisher r-to-z transformed correlation:",corr)
-
-            # plot correlation of flattened arrays [mostly for testing but keeping for now]
-            #plt.scatter(gradient_array.flatten(), task_array_masked.flatten(), marker='.')
-            #plt.savefig(os.path.join(repo_path,f'scratch/plots/{task_name}_{gradnumber}_scatter.png'))
-            #plt.close()
+		        # apply fishers-r-to-z transformation to correlation value
+                # corr = np.arctanh(corr)
+                if verbose > 0:
+                    print ("Pearson (Fisher r-to-z transformed) correlation:",corr)
 
             corr_dictionary[task_name][grad_name]= corr # add corr value to dict
 
@@ -138,14 +134,14 @@ def corrTasks(mask_name, outputdir=None, inputfiles=None,
     if z_score:
         # Z-score each column and create new columns with the suffix '_z'
         for col in df.columns:
-            zsc_df[col] = zscore(df[col])
+            zsc_df[f'Z{col}'] = zscore(df[col])
         if outputdir != None:
-            zsc_df.to_csv(os.path.join(outputdir,f'Zgradscores_{corr_method}.csv'))
+            zsc_df.to_csv(os.path.join(outputdir,f'Zgradscores_{corr_method}_{mask_name}.csv'))
         return zsc_df
 
     # save dataframe to csv
     if outputdir != None:
-        df.to_csv(os.path.join(outputdir,f'gradscores_{corr_method}.csv'))
+        df.to_csv(os.path.join(outputdir,f'gradscores_{corr_method}_{mask_name}.csv'))
 
     return df
 
