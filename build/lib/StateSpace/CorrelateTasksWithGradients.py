@@ -26,7 +26,7 @@ def getdata(mask_name, map_coverage):
     gradient_subdir = pkg_resources.resource_filename('StateSpace','data/gradients')
     # then use glob to access a list of files within
     if map_coverage == 'cortical_only':
-        gradient_paths = sorted(glob.glob(f'{gradient_subdir}/*cortical.nii.gz'))
+        gradient_paths = sorted(glob.glob(f'{gradient_subdir}/*cortical_only.nii.gz'))
     elif map_coverage == 'all':
         gradient_paths = sorted(glob.glob(f'{gradient_subdir}/*subcortical.nii.gz'))
 
