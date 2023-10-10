@@ -141,7 +141,12 @@ def taskid_subid(pth, taskstring, substring):
     Function to extract task id and sub id from file path if running individual level analyses
  
     """
-    splits = pth.split('/')
+    
+    # Normalize the path using os.path
+    normalized_path = os.path.normpath(pth)
+    
+    # split path using forward slash
+    splits = normalized_path.split('/')
 
     taskid = [i for i in splits if taskstring in i]
     subid = [i for i in splits if substring in i]
@@ -155,7 +160,11 @@ def runid(pth, runstring):
     """
     Function to extract run id from file path if running run level analyses
     """
-    splits = pth.split('/') 
+    # Normalize the path using os.path
+    normalized_path = os.path.normpath(pth)
+    
+    # split path using forward slash
+    splits = normalized_path.split('/')
 
     runid = [i for i in splits if runstring in i]
     
