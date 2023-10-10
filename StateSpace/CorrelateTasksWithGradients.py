@@ -174,9 +174,18 @@ def runid(pth, runstring):
     return runid[0]
 
 # this function correlates individual-level maps and gradient maps
-def corrInd(data, mask_name, map_coverage, inputfiles, outputdir,
-            taskstring, substring, runstring = None,
-            corr_method='spearman', verbose=-1):
+def corrInd(
+    data, 
+    sim_metric, 
+    mask_name, 
+    map_coverage, 
+    inputfiles, 
+    outputdir,
+    taskstring, 
+    substring, 
+    runstring = None,
+    corr_method='spearman', 
+    verbose=-1):
 
     assert type(inputfiles)==list
     assert os.path.exists(os.path.dirname(inputfiles[0]))
