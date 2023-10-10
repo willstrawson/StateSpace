@@ -21,14 +21,24 @@ from scipy.stats import zscore
 
 
 # this function extracts necessary data needed to run corrTasks function (see below)
-def getdata(mask_name, map_coverage):
-    # use pkg_resources to access the absolute path for each data subdirectory 
-    gradient_subdir = pkg_resources.resource_filename('StateSpace','data/gradients')
-    # then use glob to access a list of files within
-    if map_coverage == 'cortical_only':
-        gradient_paths = sorted(glob.glob(f'{gradient_subdir}/*cortical_only.nii.gz'))
-    elif map_coverage == 'all':
-        gradient_paths = sorted(glob.glob(f'{gradient_subdir}/*subcortical.nii.gz'))
+def getdata(data, mask_name, map_coverage):
+    if data == 'gradients':
+        # use pkg_resources to access the absolute path for each data subdirectory 
+        gradient_subdir = pkg_resources.resource_filename('StateSpace','data/gradients')
+        # then use glob to access a list of files within
+        if map_coverage == 'cortical_only':
+            gradient_paths = sorted(glob.glob(f'{gradient_subdir}/*cortical_only.nii.gz'))
+            # get pain map path too 
+        elif map_coverage == 'all':
+            gradient_paths = sorted(glob.glob(f'{gradient_subdir}/*subcortical.nii.gz'))
+
+    elif data == 'pain': # if working with cannonical pain maps (not gradients)
+    # NOTE: map_covarage not operationaized here as i've only made the one vps map
+    # TODO: Create cortical only version of vps map and nname the two accordingly 
+        # use pkg_resources to access the absolute path for each data subdirectory 
+        pain_subdir = pkg_resources.resource_filename('StateSpace','data/pain')
+        # then use glob to access a list of files within
+        pain_paths = sorted(glob.glob(f'{pain_subdir}/*.nii.gz'))
 
     mask_subdir = pkg_resources.resource_filename('StateSpace','data/masks')
     mask_path = sorted(glob.glob(f'{mask_subdir}/{mask_name}.nii.gz'))[0]
@@ -164,7 +174,7 @@ def runid(pth, runstring):
     return runid[0]
 
 # this function correlates individual-level maps and gradient maps
-def corrInd(mask_name, map_coverage, inputfiles, outputdir,
+def corrInd(data, mask_name, map_coverage, inputfiles, outputdir,
             taskstring, substring, runstring = None,
             corr_method='spearman', verbose=-1):
 
@@ -172,7 +182,7 @@ def corrInd(mask_name, map_coverage, inputfiles, outputdir,
     assert os.path.exists(os.path.dirname(inputfiles[0]))
     if verbose > 0:
             print(f"Using {len(inputfiles)} input task maps")
-    gradient_paths, mask_path, task_paths = getdata(mask_name, map_coverage)
+    gradient_paths, mask_path, task_paths = getdata(data, mask_name, map_coverage)
 
     task_paths = inputfiles
 

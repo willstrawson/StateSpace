@@ -18,6 +18,7 @@ if os.path.exists(outputdir) == False: #If scratch doesn't exist
 
 """
 CorrInd Args: 
+data [pain/gradients],
 mask_name, 
 map_coverage, 
 inputfiles, 
@@ -30,25 +31,22 @@ verbose=-1):
 
 """
 
-# Full mask (created from binairizing vps .nii), cortical only 
-CorrelateTasksWithGradients.corrInd('combinedmask_cortical',
-                                      'cortical_only',
-                                      outputdir, verbose = 1)
+
 
 # Full mask (created from binairizing vps .nii), cortical and subccortical
-CorrelateTasksWithGradients.corrInd('combinedmask_cortical_subcortical',
-                                      'all',
-                                      outputdir, verbose = 1)
-
-# Full mask (created from binairizing vps .nii), cortical only, z scored 
-CorrelateTasksWithGradients.corrInd('combinedmask_cortical',
-                                      'cortical_only',
-                                      outputdir, verbose = 1,
-                                      z_score=True)
+CorrelateTasksWithGradients.corrInd(
+    'pain',
+    'vps_2020',
+    'all',
+    outputdir, 
+    verbose = 1)
 
 # Full mask (created from binairizing vps .nii), cortical and subccortical, z scored 
-CorrelateTasksWithGradients.corrInd('combinedmask_cortical_subcortical',
-                                      'all',
-                                      outputdir, verbose = 1,
-                                      z_score=True)
+CorrelateTasksWithGradients.corrInd(
+    'pain'
+    'vps_2020',                                  
+    'all',
+    outputdir, 
+    verbose = 1,
+    z_score=True)
 
