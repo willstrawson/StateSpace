@@ -21,16 +21,10 @@ from scipy.stats import zscore
 
 
 # this function extracts necessary data needed to run corrTasks function (see below)
-def getdata(data, mask_name, map_coverage):
+def getdata(data, mask_name):
     if data == 'gradients':
         # use pkg_resources to access the absolute path for each data subdirectory 
         gradient_subdir = pkg_resources.resource_filename('StateSpace','data/gradients')
-        # then use glob to access a list of files within
-        if map_coverage == 'cortical_only':
-            gradient_paths = sorted(glob.glob(f'{gradient_subdir}/*cortical_only.nii.gz'))
-            # get pain map path too 
-        elif map_coverage == 'all':
-            gradient_paths = sorted(glob.glob(f'{gradient_subdir}/*subcortical.nii.gz'))
 
     elif data == 'pain': # if working with cannonical pain maps (not gradients)
     # NOTE: map_covarage not operationaized here as i've only made the one vps map
@@ -42,6 +36,8 @@ def getdata(data, mask_name, map_coverage):
 
     mask_subdir = pkg_resources.resource_filename('StateSpace','data/masks')
     mask_path = sorted(glob.glob(f'{mask_subdir}/{mask_name}.nii.gz'))[0]
+
+
 
     task_subdir = pkg_resources.resource_filename('StateSpace','data/realTaskNiftis')
     task_paths = sorted(glob.glob(f'{task_subdir}/*nii.gz'))
@@ -94,7 +90,7 @@ def corrGroup(mask_name, map_coverage, outputdir=None, inputfiles=None,
         if saveMaskedimgs == True and outputdir != None:
             nib.save(multmap, 
             os.path.join(outputdir,f'{task_name}_masked.nii.gz'))
-
+r
         # turn to numpy array 
         task_array_masked = multmap.get_fdata()
 
@@ -161,6 +157,78 @@ def taskid_subid(pth, taskstring, substring):
 
     return taskid[0], subid[0]
 
+def taskid_subid_pain(pth, taskstring, substring):
+    """
+    Function to extract task id and sub id from file path if running individual level analyses
+    This is a custom function for the pain dataset, where taskid and subid are in the filename
+ 
+    """
+    picture_contrast_dict = {
+        '00001': 'foot_nopain',
+        '00002': 'foot_pain',
+        '00003': 'hand_nopain',
+        '00004': 'hand_pain',
+        '00005': 'foot_nopain_fix',
+        '00006': 'foot_pain_fix',
+        '00007': 'hand_nopain_fix',
+        '00008': 'hand_pain_fix'
+    }
+    video_contrast_dict = {
+        '00001':'cue_self1hand',
+        '00002':'cue_other1hand',
+        '00003':'cue_self2hand',
+        '00004':'cue_other2hand',
+        '00005':'cue_self3hand',
+        '00006':'cue_other3hand',
+        '00007':'cue_self1foot',
+        '00008':'cue_other1foot',
+        '00009':'cue_self2foot',
+        '00010':'cue_other2foot',
+        '00011':'cue_self3foot',
+        '00012':'cue_other3foot',
+        '00013':'shock_self1hand',
+        '00014':'shock_other1hand',
+        '00015':'shock_self2hand',
+        '00016':'shock_other2hand',
+        '00017':'shock_self3hand',
+        '00018':'shock_other3hand',
+        '00019':'shock_self1foot',
+        '00020':'shock_other1foot',
+        '00021':'shock_self2foot',
+        '00022':'shock_other2foot',
+        '00023':'shock_self3foot',
+        '00024':'shock_other3foot',
+        '00025':'circle_self1hand',
+        '00026':'circle_other1hand',
+        '00027':'circle_self2hand',
+        '00028':'circle_other2hand',
+        '00029':'circle_self3hand',
+        '00030':'circle_other3hand',
+        '00031':'circle_self1foot',
+        '00032':'circle_other1foot',
+        '00033':'circle_self2foot',
+        '00034':'circle_other2foot',
+        '00035':'circle_self3foot',
+        '00036':'circle_other3foot',
+    }
+    
+    splits = os.path.split(pth)[-1].split('_')
+
+    taskid = [i for i in splits if taskstring in i]
+    subid = [i for i in splits if substring in i]
+
+    if 'picture' in splits:
+        taskid = [v for k,v in picture_contrast_dict.items() if k == taskid]
+
+    if 'video' in splits:
+        taskid = [v for k,v in video_contrast_dict.items() if k == taskid]
+
+
+    assert taskid
+    assert subid
+
+    return taskid[0], subid[0]
+
 def runid(pth, runstring):
     """
     Function to extract run id from file path if running run level analyses
@@ -178,14 +246,12 @@ def corrInd(
     data, 
     sim_metric, 
     mask_name, 
-    map_coverage, 
     inputfiles, 
     outputdir,
     taskstring, 
     substring, 
     runstring = None,
-    corr_method='spearman', 
-    verbose=-1):
+    verbose=1):
 
     assert type(inputfiles)==list
     assert os.path.exists(os.path.dirname(inputfiles[0]))
@@ -199,7 +265,7 @@ def corrInd(
     maskimg = nib.load(mask_path)
 
     # create empty dictionary to store correlation values in
-    corr_dictionary = {}
+    sim_dictionary = {}
 
     # loop over each task
     for task in task_paths:
@@ -208,7 +274,7 @@ def corrInd(
         taskimg = nib.load(task)
 
         # extract task name and subject id from file path
-        task_name, subid = taskid_subid(task, taskstring, substring)
+        task_name, subid = taskid_subid_pain(task, taskstring, substring)
 
         # apply mask 
         try:
@@ -224,18 +290,18 @@ def corrInd(
         task_array_masked = multmap.get_fdata()
 
         # create the 1st level dictionary key (task name)
-        if task_name not in corr_dictionary:
-            corr_dictionary[task_name] = {}
+        if task_name not in sim_dictionary:
+            sim_dictionary[task_name] = {}
 
         # create the 2nd level dictionary key (subject id) if it doesn't exist
-        if subid not in corr_dictionary[task_name]:
-            corr_dictionary[task_name][subid] = {}
+        if subid not in sim_dictionary[task_name]:
+            sim_dictionary[task_name][subid] = {}
 
         if runstring is not None:
             runid_val = runid(task, runstring)
             # create the 3rd level dictionary key (runid) if it doesn't exist
-            if runid_val not in corr_dictionary[task_name][subid]:
-                corr_dictionary[task_name][subid][runid_val] = {}
+            if runid_val not in sim_dictionary[task_name][subid]:
+                sim_dictionary[task_name][subid][runid_val] = {}
 
         if verbose > 0:
             print (task_name)
@@ -258,38 +324,40 @@ def corrInd(
             # Get the gradient image data as a numpy array
             gradient_array = gradientimg_m.get_fdata()
 
-            # correlate task map and gradients 
-            if corr_method == 'spearman':
+            if sim_metric == 'corr':
+                # correlate task map and gradients 
                 corr = spearmanr(gradient_array.flatten(), task_array_masked.flatten())[0]
                 if verbose > 0:
                     print ("Spearman correlation:",corr)
+                
+                sim = corr
+            
+            elif sim_metric == 'dotproduct':
+                # perform dot product 
+                assert gradient_array.shape == task_array_masked.shape
+                dot = np.vdot(gradient_array,task_array_masked) # dot product but converts input arrays to 1-d vectors first
 
-            elif corr_method == 'pearson':
-                corr = pearsonr(gradient_array.flatten(), task_array_masked.flatten())[0]
-		        # apply fishers-r-to-z transformation to correlation value
-                corr = np.arctanh(corr)
-                if verbose > 0:
-                    print ("Pearson (Fisher r-to-z transformed) correlation:",corr)
+                sim = dot
 
             if runstring is None:
-                corr_dictionary[task_name][subid][grad_name] = corr
+                sim_dictionary[task_name][subid][grad_name] = sim
             else:
-                corr_dictionary[task_name][subid][runid_val][grad_name] = corr
+                sim_dictionary[task_name][subid][runid_val][grad_name] = sim
 
     if runstring is None:
         # Create an empty list to store data in long format
         data_long = []
 
         # Iterate through the nested dictionary to convert it to long format
-        for task, sub_dict in corr_dictionary.items():
+        for task, sub_dict in sim_dictionary.items():
             for sub, grad_dict in sub_dict.items():
-                data_long.extend([task, sub, grad, corr] for grad, corr in grad_dict.items())
+                data_long.extend([task, sub, grad, sim] for grad, sim in grad_dict.items())
                 
         # Create the 'df_long' DataFrame
-        df_long = pd.DataFrame(data_long, columns=['Task_name', 'subid', 'Gradient', 'Correlation'])
+        df_long = pd.DataFrame(data_long, columns=['Task_name', 'subid', 'Gradient', f'{sim_metric}'])
 
         # Create the 'df_wide' DataFrame
-        df_wide = df_long.pivot_table(index=['Task_name', 'subid'], columns='Gradient', values='Correlation').reset_index()
+        df_wide = df_long.pivot_table(index=['Task_name', 'subid'], columns='Gradient', values=f'{sim_metric}').reset_index()
 
     else:
         # Create an empty list to store data in long format
@@ -307,20 +375,20 @@ def corrInd(
                 return
 
         # Iterate through the nested dictionary to convert it to long format
-        for task_name, sub_dict in corr_dictionary.items():
+        for task_name, sub_dict in sim_dictionary.items():
             for sub_id, run_dict in sub_dict.items():
                 process_dict(run_dict, task_name, sub_id)
 
         # Create the 'df_long' DataFrame
-        df_long = pd.DataFrame(data_long, columns=['Task_name', 'subid', 'runid', 'Gradient', 'Correlation'])
+        df_long = pd.DataFrame(data_long, columns=['Task_name', 'subid', 'runid', 'Gradient', f'{sim_metric}'])
 
         # Create the 'df_wide' DataFrame
-        df_wide = df_long.pivot_table(index=['Task_name', 'subid', 'runid'], columns='Gradient', values='Correlation').reset_index()
+        df_wide = df_long.pivot_table(index=['Task_name', 'subid', 'runid'], columns='Gradient', values=f'{sim_metric}').reset_index()
  
     # save dataframe to csv
     if outputdir != None:
-        df_long.to_csv(os.path.join(outputdir,f'gradscores_{corr_method}_{mask_name}_long.csv'), index=False)
-        df_wide.to_csv(os.path.join(outputdir,f'gradscores_{corr_method}_{mask_name}_wide.csv'), index=False)
+        df_long.to_csv(os.path.join(outputdir,f'{data}_{sim_metric}_{mask_name}_long.csv'), index=False)
+        df_wide.to_csv(os.path.join(outputdir,f'{data}_{sim_metric}_{mask_name}_wide.csv'), index=False)
 
     return df_wide
 
