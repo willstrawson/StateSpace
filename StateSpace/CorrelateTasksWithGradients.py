@@ -24,7 +24,7 @@ from scipy.stats import zscore
 def getdata(data, mask_name):
     if data == 'gradients':
         # use pkg_resources to access the absolute path for each data subdirectory 
-        gradient_subdir = pkg_resources.resource_filename('StateSpace','data/gradients')
+        canonical_paths = pkg_resources.resource_filename('StateSpace','data/gradients')
 
     elif data == 'pain': # if working with cannonical pain maps (not gradients)
     # NOTE: map_covarage not operationaized here as i've only made the one vps map
@@ -32,7 +32,7 @@ def getdata(data, mask_name):
         # use pkg_resources to access the absolute path for each data subdirectory 
         pain_subdir = pkg_resources.resource_filename('StateSpace','data/pain')
         # then use glob to access a list of files within
-        pain_paths = sorted(glob.glob(f'{pain_subdir}/*.nii.gz'))
+        canonical_paths = sorted(glob.glob(f'{pain_subdir}/*.nii.gz'))
 
     mask_subdir = pkg_resources.resource_filename('StateSpace','data/masks')
     mask_path = sorted(glob.glob(f'{mask_subdir}/{mask_name}.nii.gz'))[0]
@@ -42,7 +42,7 @@ def getdata(data, mask_name):
     task_subdir = pkg_resources.resource_filename('StateSpace','data/realTaskNiftis')
     task_paths = sorted(glob.glob(f'{task_subdir}/*nii.gz'))
 
-    return gradient_paths, mask_path, task_paths
+    return canonical_paths, mask_path, task_paths
 
 # this function correlates group maps and gradient maps
 def corrGroup(mask_name, map_coverage, outputdir=None, inputfiles=None,
@@ -90,7 +90,7 @@ def corrGroup(mask_name, map_coverage, outputdir=None, inputfiles=None,
         if saveMaskedimgs == True and outputdir != None:
             nib.save(multmap, 
             os.path.join(outputdir,f'{task_name}_masked.nii.gz'))
-r
+
         # turn to numpy array 
         task_array_masked = multmap.get_fdata()
 
@@ -218,14 +218,15 @@ def taskid_subid_pain(pth, taskstring, substring):
     subid = [i for i in splits if substring in i]
 
     if 'picture' in splits:
-        taskid = [v for k,v in picture_contrast_dict.items() if k == taskid]
+        taskid = [v for k,v in picture_contrast_dict.items() if k == taskid[0].strip('.nii')]
 
     if 'video' in splits:
-        taskid = [v for k,v in video_contrast_dict.items() if k == taskid]
+        taskid = [v for k,v in video_contrast_dict.items() if k == taskid[0].strip('.nii')]
 
-
-    assert taskid
-    assert subid
+ 
+    print(splits)
+    assert taskid[0]
+    assert subid[0]
 
     return taskid[0], subid[0]
 
@@ -257,7 +258,7 @@ def corrInd(
     assert os.path.exists(os.path.dirname(inputfiles[0]))
     if verbose > 0:
             print(f"Using {len(inputfiles)} input task maps")
-    gradient_paths, mask_path, task_paths = getdata(data, mask_name, map_coverage)
+    gradient_paths, mask_path, task_paths = getdata(data, mask_name)
 
     task_paths = inputfiles
 
@@ -281,7 +282,7 @@ def corrInd(
             multmap = nimg.math_img('a*b',a=taskimg, b=maskimg) #element wise multiplication 
         except ValueError: # if shapes don't match
             print('Shapes of images do not match')
-            print(f'mask image shape: {maskimg.shape}, task image shape {taskimg.shape}')
+            print(f'Mask image shape: {maskimg.shape}, Task image shape {taskimg.shape}')
             print('Reshaping task to mask image dimensions...')
             taskimg = nimg.resample_to_img(source_img=taskimg,target_img=maskimg,interpolation='nearest')
             multmap = nimg.math_img('a*b',a=taskimg, b=maskimg) #element wise multiplication
@@ -319,7 +320,15 @@ def corrInd(
             gradientimg = nib.load(gradient)
 
             # apply mask to gradient
-            gradientimg_m = nimg.math_img('a*b',a=gradientimg, b=maskimg)                
+            try:
+                gradientimg_m = nimg.math_img('a*b',a=gradientimg, b=maskimg)
+
+            except ValueError: # if shapes don't match
+                print('Shapes of images do not match')
+                print(f'Pain signature image shape: {gradientimg.shape}, mask image shape {maskimg.shape}')
+                print('Reshaping task to mask image dimensions...')
+                gradientimg = nimg.resample_to_img(source_img=gradientimg,target_img=maskimg,interpolation='nearest')
+                gradientimg_m = nimg.math_img('a*b',a=gradientimg, b=maskimg) #element wise multiplication                
 
             # Get the gradient image data as a numpy array
             gradient_array = gradientimg_m.get_fdata()

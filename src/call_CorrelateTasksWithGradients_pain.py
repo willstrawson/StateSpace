@@ -18,7 +18,7 @@ from StateSpace import CorrelateTasksWithGradients
 outputdir = os.path.join(os.path.split(os.path.split(os.path.realpath(__file__))[0])[0], 'scratch')
 
 #inputfiles = glob.glob('/Users/willstrawson/Documents/PhD/repos/StateSpace/StateSpace/data/realTaskNiftis_Ind/sub-*/run-*/*')
-inputfiles = glob.glob('/research/cisc1/projects/ward_painsig/VolumeData2_3D/')
+inputfiles = glob.glob('/research/cisc1/projects/ward_painsig/VolumeData2_3D/*.nii')
 
 if os.path.exists(outputdir) == False: #If scratch doesn't exist 
     os.mkdir(outputdir)
@@ -44,14 +44,14 @@ verbose=-1):
 # Full mask (created from binairizing vps .nii), cortical and subccortical
 CorrelateTasksWithGradients.corrInd(
     'pain', # use any .nii found in from data/pain dir (e.g. VPS)
-    'dot', # use dot product as similarity score
+    'dotproduct', # use dot product as similarity score
     'vps_2020', # use the vps_2020.nii 
     inputfiles, # list of input files 
     outputdir, # put in repo scratch/ 
     '.nii', # get contrast name by splitting  head of file name e.g. /research/cisc1/projects/ward_painsig/VolumeData2_3D/CISC123_results_picture_00032.nii by _ and detect substrinng comntaining .nii
     'CISC') # get subid by splitting head of filename and detect substring containning 'CISC'
 
-
+'''
 # Full mask (created from binairizing vps .nii), cortical and subccortical
 CorrelateTasksWithGradients.corrInd(
     'pain',
@@ -62,7 +62,7 @@ CorrelateTasksWithGradients.corrInd(
     '.nii',
     'CISC')
 
-'''
+
 
 # Full mask (created from binairizing vps .nii), cortical and subccortical
 CorrelateTasksWithGradients.corrInd(
