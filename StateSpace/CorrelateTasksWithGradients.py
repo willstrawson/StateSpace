@@ -277,13 +277,15 @@ def corrInd(
         # extract task name and subject id from file path
         task_name, subid = taskid_subid_pain(task, taskstring, substring)
 
-        # apply mask 
+        # apply mask
         try:
             multmap = nimg.math_img('a*b',a=taskimg, b=maskimg) #element wise multiplication 
         except ValueError: # if shapes don't match
+            print('-----------------------------')
             print('Shapes of images do not match')
             print(f'Mask image shape: {maskimg.shape}, Task image shape {taskimg.shape}')
-            print('Reshaping task to mask image dimensions...')
+            print('Reshaping task -> mask')
+            print('-----------------------------')
             taskimg = nimg.resample_to_img(source_img=taskimg,target_img=maskimg,interpolation='nearest')
             multmap = nimg.math_img('a*b',a=taskimg, b=maskimg) #element wise multiplication
 
@@ -324,9 +326,11 @@ def corrInd(
                 gradientimg_m = nimg.math_img('a*b',a=gradientimg, b=maskimg)
 
             except ValueError: # if shapes don't match
+                print('-----------------------------')
                 print('Shapes of images do not match')
                 print(f'Pain signature image shape: {gradientimg.shape}, mask image shape {maskimg.shape}')
-                print('Reshaping task to mask image dimensions...')
+                print('Reshaping pain map -> mask...')
+                print('-----------------------------')
                 gradientimg = nimg.resample_to_img(source_img=gradientimg,target_img=maskimg,interpolation='nearest')
                 gradientimg_m = nimg.math_img('a*b',a=gradientimg, b=maskimg) #element wise multiplication                
 
@@ -338,9 +342,9 @@ def corrInd(
                 corr = spearmanr(gradient_array.flatten(), task_array_masked.flatten())[0]
                 if verbose > 0:
                     print ("Spearman correlation:",corr)
-                
+
                 sim = corr
-            
+
             elif sim_metric == 'dotproduct':
                 # perform dot product 
                 assert gradient_array.shape == task_array_masked.shape
@@ -353,52 +357,18 @@ def corrInd(
             else:
                 sim_dictionary[task_name][subid][runid_val][grad_name] = sim
 
-    if runstring is None:
-        # Create an empty list to store data in long format
-        data_long = []
+    # Create an empty list to store data in long format
+    data_long = []
 
-        # Iterate through the nested dictionary to convert it to long format
-        for task, sub_dict in sim_dictionary.items():
-            for sub, grad_dict in sub_dict.items():
-                data_long.extend([task, sub, grad, sim] for grad, sim in grad_dict.items())
-                
-        # Create the 'df_long' DataFrame
-        df_long = pd.DataFrame(data_long, columns=['Task_name', 'subid', 'Gradient', f'{sim_metric}'])
+    # Iterate through the nested dictionary to convert it to long format
+    for task, sub_dict in sim_dictionary.items():
+        for sub, grad_dict in sub_dict.items():
+            data_long.extend([task, sub, grad, sim] for grad, sim in grad_dict.items())
 
-        # Create the 'df_wide' DataFrame
-        df_wide = df_long.pivot_table(index=['Task_name', 'subid'], columns='Gradient', values=f'{sim_metric}').reset_index()
+    # Create the 'df_long' DataFrame
+    df_long = pd.DataFrame(data_long, columns=['task_name', 'subid', 'pain_map', f'{sim_metric}'])
 
-    else:
-        # Create an empty list to store data in long format
-        data_long = []
-
-        # Function to recursively traverse the dictionary and create long format data
-        def process_dict(d, task_name, sub_id, run_id=None):
-            if isinstance(d, dict):
-                for key, value in d.items():
-                    if run_id is not None:
-                        data_long.append([task_name, sub_id, run_id, key, value])
-                    elif isinstance(value, dict):
-                        process_dict(value, task_name, sub_id, key)
-            else:
-                return
-
-        # Iterate through the nested dictionary to convert it to long format
-        for task_name, sub_dict in sim_dictionary.items():
-            for sub_id, run_dict in sub_dict.items():
-                process_dict(run_dict, task_name, sub_id)
-
-        # Create the 'df_long' DataFrame
-        df_long = pd.DataFrame(data_long, columns=['Task_name', 'subid', 'runid', 'Gradient', f'{sim_metric}'])
-
-        # Create the 'df_wide' DataFrame
-        df_wide = df_long.pivot_table(index=['Task_name', 'subid', 'runid'], columns='Gradient', values=f'{sim_metric}').reset_index()
- 
-    # save dataframe to csv
-    if outputdir != None:
-        df_long.to_csv(os.path.join(outputdir,f'{data}_{sim_metric}_{mask_name}_long.csv'), index=False)
-        df_wide.to_csv(os.path.join(outputdir,f'{data}_{sim_metric}_{mask_name}_wide.csv'), index=False)
-
-    return df_wide
+    # Create the 'df_wide' DataFrame
+    df_wide = df_long.pivot_table(index='subid', columns=['task_name','pain_map'], values=f'{sim_metric}').reset_index()
 
 
