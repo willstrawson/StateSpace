@@ -284,9 +284,9 @@ def corrInd(
             print('-----------------------------')
             print('Shapes of images do not match')
             print(f'Mask image shape: {maskimg.shape}, Task image shape {taskimg.shape}')
-            print('Reshaping task -> mask')
+            print('Reshaping mask -> task') # preserve the task image 
             print('-----------------------------')
-            taskimg = nimg.resample_to_img(source_img=taskimg,target_img=maskimg,interpolation='nearest')
+            maskimg = nimg.resample_to_img(source_img=maskimg,target_img=taskimg,interpolation='nearest')
             multmap = nimg.math_img('a*b',a=taskimg, b=maskimg) #element wise multiplication
 
         # turn to numpy array
@@ -310,7 +310,7 @@ def corrInd(
             print (task_name)
             print('\n')
 
-        # Iterate through each of Neurovault's gradients
+        # Iterate through each of pain maps 
         for index, (gradient) in enumerate(gradient_paths):
 
             grad_name = os.path.basename(os.path.normpath(gradient))
@@ -349,7 +349,7 @@ def corrInd(
                 # perform dot product 
                 assert gradient_array.shape == task_array_masked.shape
                 dot = np.vdot(gradient_array,task_array_masked) # dot product but converts input arrays to 1-d vectors first
-
+                assert dot == np.dot(gradient_array.flatten(),task_array_masked.flatten())
                 sim = dot
 
             if runstring is None:
@@ -370,5 +370,9 @@ def corrInd(
 
     # Create the 'df_wide' DataFrame
     df_wide = df_long.pivot_table(index='subid', columns=['task_name','pain_map'], values=f'{sim_metric}').reset_index()
+
+    if outputdir != None: 
+        df_long.to_csv(os.path.join(outputdir,f'{data}_{sim_metric}_{mask_name}_long.csv'))
+        df_wide.to_csv(os.path.join(outputdir,f'{data}_{sim_metric}_{mask_name}_wide.csv'))
 
 

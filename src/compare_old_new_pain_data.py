@@ -9,7 +9,7 @@ from scipy.stats import pearsonr
 
 
 old_data = pd.read_csv('/Users/willstrawson/Documents/PhD/repos/StateSpace/scratch/NPS_and_VPS_results_old.csv')
-new_data = pd.read_csv('/Users/willstrawson/Documents/PhD/repos/StateSpace/scratch/pain_dotproduct_vps_2020_long.csv')
+new_data = pd.read_csv('/Users/willstrawson/Documents/PhD/repos/StateSpace/scratch/pain_dotproduct_brainmask_canlab_bin_long.csv')
 
 # clean old_data
 # remove ' in cisc numbers 
@@ -27,9 +27,13 @@ old_data.rename(columns={'SUB_ID':'subject_id'}, inplace=True)
 old_data.columns = old_data.columns.str.replace(' ', '_')
 
 # transform new data to match old data 
+
+# change subid 
+new_data.rename(columns={'subid':'subject_id'}, inplace=True)
+
 # make task_name into columns
 # Remove rows where 'canonical_map' contains 'General_vicarious_pain_pattern_unthresholded'
-new_data = new_data[~new_data['canonical_map'].str.contains('General_vicarious_pain_pattern_unthresholded')]
+new_data = new_data[~new_data['pain_map'].str.contains('General_vicarious_pain_pattern_unthresholded')]
 # Pivot the DataFrame to create new columns from 'task_name'
 pivoted_df = new_data.pivot(index = 'subject_id',columns='task_name', values='dotproduct').fillna(0)
 
