@@ -37,19 +37,17 @@ def getdata(mask_name, map_coverage):
     Returns:
         tuple: A tuple containing the paths of gradient files, mask file, and task files.
     """
-    # use pkg_resources to access the absolute path for each data subdirectory 
-    gradient_subdir = pkg_resources.resource_filename('StateSpace','data/gradients')
-    # then use glob to access a list of files within
-    if map_coverage == 'cortical_only':
-        gradient_paths = sorted(glob.glob(f'{gradient_subdir}/*cortical_only.nii.gz'))
-    elif map_coverage == 'all':
-        gradient_paths = sorted(glob.glob(f'{gradient_subdir}/*subcortical.nii.gz'))
+    def get_sorted_paths(subdir, pattern):
+        subdir_path = pkg_resources.resource_filename('StateSpace', subdir)
+        return sorted(glob.glob(f'{subdir_path}/{pattern}'))
 
-    mask_subdir = pkg_resources.resource_filename('StateSpace','data/masks')
-    mask_path = sorted(glob.glob(f'{mask_subdir}/{mask_name}.nii.gz'))[0]
+    gradient_pattern = '*cortical_only.nii.gz' if map_coverage == 'cortical_only' else '*subcortical.nii.gz'
+    gradient_paths = get_sorted_paths('data/gradients', gradient_pattern)
 
-    task_subdir = pkg_resources.resource_filename('StateSpace','data/realTaskNiftis')
-    task_paths = sorted(glob.glob(f'{task_subdir}/*nii.gz'))
+    mask_paths = get_sorted_paths('data/masks', f'{mask_name}.nii.gz')
+    mask_path = mask_paths[0]
+
+    task_paths = get_sorted_paths('data/realTaskNiftis', '*nii.gz')
 
     return gradient_paths, mask_path, task_paths
 
@@ -179,17 +177,25 @@ def taskid_subid(pth, taskstring, substring):
     """
     # Normalize the path using os.path
     normalized_path = os.path.normpath(pth)
-    
-    # split path using forward slash
-    splits = normalized_path.split('/')
 
-    taskid = [i for i in splits if taskstring in i]
-    subid = [i for i in splits if substring in i]
+    # split path using os.path.split
+    splits = normalized_path.split(os.path.sep)
+
+    taskid = None
+    subid = None
+
+    for i in splits:
+        if taskstring in i:
+            taskid = i
+        if substring in i:
+            subid = i
+        if taskid and subid:
+            break
 
     assert taskid
     assert subid
 
-    return taskid[0], subid[0]
+    return taskid, subid
 
 def runid(pth, runstring):
     """
@@ -235,6 +241,7 @@ def corrInd(mask_name, map_coverage, inputfiles, outputdir,
     Returns:
         pandas.DataFrame: The correlation values between task maps and gradients.
     """
+
 
     assert type(inputfiles)==list
     assert os.path.exists(os.path.dirname(inputfiles[0]))

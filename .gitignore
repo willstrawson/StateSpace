@@ -10,3 +10,4 @@ yeo_networks/yeo_2011/Yeo_JNeurophysiol11_MNI152/Yeo2011_7Networks_MNI152_FreeSu
 yeo_networks/yeo_2011/Yeo_JNeurophysiol11_MNI152/Yeo_JNeurophysiol11_MNI152_README
 build/lib/StateSpace/
 build/lib/StateSpace/CorrelateTasksWithGradients.py
+build/
