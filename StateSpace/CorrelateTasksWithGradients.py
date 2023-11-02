@@ -3,9 +3,16 @@
 """
 Created on Wed Feb 22 08:17:21 2023
 
-@author: bront
+@authors: Bronte Mckeown, Will Strawson, Ian Goodall-Halliwell
 
-Contains functions to correlate tasks in task battery with gradients.
+Contains functions to correlate:
+1) group-level brain maps
+2) individual-level brain maps
+3) Per-TR brain maps
+
+With the first five Gradients from Margulies et al.
+
+This produces 'coordinates' in state space.
 
 """
 
@@ -19,9 +26,17 @@ import numpy as np
 import pkg_resources
 from scipy.stats import zscore
 
-
-# this function extracts necessary data needed to run corrTasks function (see below)
 def getdata(mask_name, map_coverage):
+    """
+    Get the paths of gradient, mask, and task files.
+
+    Args:
+        mask_name (str): The name of the mask.
+        map_coverage (str): The coverage of the map.
+
+    Returns:
+        tuple: A tuple containing the paths of gradient files, mask file, and task files.
+    """
     # use pkg_resources to access the absolute path for each data subdirectory 
     gradient_subdir = pkg_resources.resource_filename('StateSpace','data/gradients')
     # then use glob to access a list of files within
@@ -38,9 +53,23 @@ def getdata(mask_name, map_coverage):
 
     return gradient_paths, mask_path, task_paths
 
-# this function correlates group maps and gradient maps
 def corrGroup(mask_name, map_coverage, outputdir=None, inputfiles=None,
               corr_method='spearman', saveMaskedimgs = False,verbose=-1):
+    """
+    Calculate the correlation between task maps and gradients.
+
+    Args:
+        mask_name (str): The name of the mask.
+        map_coverage (float): The coverage of the map.
+        outputdir (str, optional): The output directory. Defaults to None.
+        inputfiles (list, optional): The input task maps. Defaults to None.
+        corr_method (str, optional): The correlation method. Defaults to 'spearman'.
+        saveMaskedimgs (bool, optional): Whether to save masked task images. Defaults to False.
+        verbose (int, optional): The verbosity level. Defaults to -1.
+
+    Returns:
+        pandas.DataFrame: The correlation values between task maps and gradients.
+    """
 
     # get all the relevent data by calling getdata() function
     if inputfiles is None:
@@ -138,10 +167,16 @@ def corrGroup(mask_name, map_coverage, outputdir=None, inputfiles=None,
 
 def taskid_subid(pth, taskstring, substring):
     """
-    Function to extract task id and sub id from file path if running individual level analyses
- 
+    Extracts the task ID and subject ID from a file path when running individual level analyses.
+
+    Args:
+        pth (str): The file path.
+        taskstring (str): The string identifying the task.
+        substring (str): The string identifying the subject.
+
+    Returns:
+        tuple: A tuple containing the task ID and subject ID extracted from the file path.
     """
-    
     # Normalize the path using os.path
     normalized_path = os.path.normpath(pth)
     
@@ -158,8 +193,16 @@ def taskid_subid(pth, taskstring, substring):
 
 def runid(pth, runstring):
     """
-    Function to extract run id from file path if running run level analyses
+    Extracts the run ID from a file path when running run level analyses.
+
+    Args:
+        pth (str): The file path.
+        runstring (str): The string identifying the run.
+
+    Returns:
+        str: The run ID extracted from the file path.
     """
+
     # Normalize the path using os.path
     normalized_path = os.path.normpath(pth)
     
@@ -172,10 +215,26 @@ def runid(pth, runstring):
 
     return runid[0]
 
-# this function correlates individual-level maps and gradient maps
 def corrInd(mask_name, map_coverage, inputfiles, outputdir,
             taskstring, substring, runstring = None,
             corr_method='spearman', verbose=-1):
+    """
+    Correlate individual-level maps and gradient maps.
+
+    Args:
+        mask_name (str): The name of the mask.
+        map_coverage (float): The coverage of the map.
+        inputfiles (list): The input task maps.
+        outputdir (str): The output directory.
+        taskstring (str): The string identifying the task.
+        substring (str): The string identifying the subject.
+        runstring (str, optional): The string identifying the run. Defaults to None.
+        corr_method (str, optional): The correlation method. Defaults to 'spearman'.
+        verbose (int, optional): The verbosity level. Defaults to -1.
+
+    Returns:
+        pandas.DataFrame: The correlation values between task maps and gradients.
+    """
 
     assert type(inputfiles)==list
     assert os.path.exists(os.path.dirname(inputfiles[0]))
