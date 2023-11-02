@@ -24,7 +24,6 @@ import os
 import pandas as pd
 import numpy as np
 import pkg_resources
-from scipy.stats import zscore
 
 def getdata(mask_name, map_coverage):
     """
@@ -213,7 +212,7 @@ def runid(pth, runstring):
     normalized_path = os.path.normpath(pth)
     
     # split path using forward slash
-    splits = normalized_path.split('/')
+    splits = normalized_path.split(os.path.sep)
 
     runid = [i for i in splits if runstring in i]
     
@@ -379,5 +378,11 @@ def corrInd(mask_name, map_coverage, inputfiles, outputdir,
         df_wide.to_csv(os.path.join(outputdir,f'gradscores_{corr_method}_{mask_name}_wide.csv'), index=False)
 
     return df_wide
+
+
+
+
+
+
 
 
