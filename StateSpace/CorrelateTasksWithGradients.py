@@ -26,7 +26,6 @@ import numpy as np
 import pkg_resources
 from nilearn import masking
 
-
 def getdata(mask_name, map_coverage):
     """
     Get the paths of gradient, mask, and task files.
@@ -407,25 +406,25 @@ def corrGroupTimeCourse(mask_name, map_coverage, timecourse_name, inputfiles, ou
         # Add the 4D array to the list
         data_arrays.append(data)
 
-    # store affine of one of the images for below
+    # store affine last image for below
     affine_matrix = taskimg.affine
 
-    # Combine the individual arrays into a single 5D array with an additional dimension for individuals
+    # Combine the individual arrays into a single 5D array (additional dimension for individuals)
     combined_brain_data = np.array(data_arrays)
 
     # Calculate the average along the first axis (axis=0) to get the average brain data across individuals
+    # makes it a 4-day array again (group-average)
     group_averaged_time_course = np.mean(combined_brain_data, axis=0)
 
-    # convert back to image
+    # convert 4-d array back to image
     groupimg = nib.Nifti1Image(group_averaged_time_course, affine=affine_matrix)
 
-    # reshape mask to be 4d
+    # reshape mask to be 4d (additional dimension of time)
     mask_reshaped = maskimg.get_fdata()[:, :, :, np.newaxis]
-
     groupimg_shape = groupimg.shape
     mask_reshaped = np.tile(mask_reshaped, (1, 1, 1, groupimg_shape[3]))
 
-    # convert back to image
+    # convert mask back to image
     maskimg_4d = nib.Nifti1Image(mask_reshaped, maskimg.affine)
 
     # apply mask 
@@ -444,20 +443,23 @@ def corrGroupTimeCourse(mask_name, map_coverage, timecourse_name, inputfiles, ou
         multmap = nimg.math_img('a*b',a=groupimg, b=maskimg_4d) #element wise multiplication
         # multmap = masking.apply_mask(groupimg, maskimg_4d)
 
+    # get data from masked array
     group_array_masked = multmap.get_fdata()
 
     # create corr dictionary for results
     corr_dictionary = {}
 
     # Iterate through each of Neurovault's gradients
-    for index, (gradient) in enumerate(gradient_paths):
+    for gradient in gradient_paths:
 
         grad_name = os.path.basename(os.path.normpath(gradient))
         grad_name = grad_name.split(".")[0]
         if verbose > 0:
             print (grad_name)
 
-        corr_dictionary[grad_name] = {}
+        # create key for gradient
+        if grad_name not in corr_dictionary:
+            corr_dictionary[grad_name] = {}
 
         # load gradient
         gradientimg = nib.load(gradient)
@@ -468,37 +470,42 @@ def corrGroupTimeCourse(mask_name, map_coverage, timecourse_name, inputfiles, ou
         # Get the gradient image data as a numpy array
         gradient_array = gradientimg_m.get_fdata()
 
+        # loop over group-averaged array TRs (4th dimension)
         for tr_volume in range(group_array_masked.shape[3]):
+
+            # select TR volume
             tr_array_masked = group_array_masked[:, :, :, tr_volume]
 
-            # correlate task map and gradients 
+            # correlate task map and gradients
             if corr_method == 'spearman':
                 corr = spearmanr(gradient_array.flatten(), tr_array_masked.flatten())[0]
                 if verbose > 0:
-                    print ("Spearman correlation:",corr)
+                    print (f"Spearman correlation TR {tr_volume}:",corr)
 
             elif corr_method == 'pearson':
                 corr = pearsonr(gradient_array.flatten(), tr_array_masked.flatten())[0]
 		        # apply fishers-r-to-z transformation to correlation value
                 corr = np.arctanh(corr)
                 if verbose > 0:
-                    print ("Pearson (Fisher r-to-z transformed) correlation:",corr)
+                    print (f"Pearson (Fisher r-to-z) correlation TR {tr_volume} :",corr)
 
             corr_dictionary[grad_name][tr_volume] = corr
 
-        # Transform corr_dictionary into pandas DataFrame
-        df = pd.DataFrame({grad_name: [corr_dictionary[grad_name].get(tr_volume, None) for tr_volume in corr_dictionary.get(grad_name, {})] for grad_name in corr_dictionary})
+    # Transform corr_dictionary into pandas DataFrame
+    df = pd.DataFrame({grad_name: [corr_dictionary[grad_name].get(tr_volume, None) for tr_volume in corr_dictionary.get(grad_name, {})] for grad_name in corr_dictionary})
 
-        # Set the index name to 'tr_volume'
-        df.index.name = 'tr_volume'
+    # Set the index name to 'tr_volume'
+    df.index.name = 'TR'
 
-        # Reset index to make 'tr_volume' a column
-        df.reset_index(inplace=True)
+    # Reset index to make 'tr_volume' a column
+    df.reset_index(inplace=True)
 
-        if outputdir != None:
-            df.to_csv(os.path.join(outputdir,f'gradscores_{timecourse_name}_{corr_method}_{mask_name}.csv'), index=False)
+    # save to output dir
+    if outputdir != None:
+        df.to_csv(os.path.join(outputdir,f'gradscores_{timecourse_name}_{corr_method}_{mask_name}.csv'), index=False)
 
-        return df
+    # returns group-averaged results
+    return df
 
 
         
