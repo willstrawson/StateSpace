@@ -396,6 +396,8 @@ def corrGrads(corr_method, verbose, gradient_array, input_array):
             print (f"Pearson (Fisher r-to-z) correlation:",corr)
     return corr
 
+from scipy.stats import zscore
+
 def corrGroupTimeCourse(mask_name, map_coverage, timecourse_name, inputfiles, outputdir=None,
               corr_method='spearman', verbose=-1):
     
@@ -410,8 +412,16 @@ def corrGroupTimeCourse(mask_name, map_coverage, timecourse_name, inputfiles, ou
     # load mask as nib object
     maskimg = nib.load(mask_path)
 
+    data_arrays = []
+
+    for task in task_paths:
+        taskimg = nib.load(task)
+        taskarray = taskimg.get_fdata()
+        ztaskarray = zscore(taskarray, axis=None, ddof=1)
+        data_arrays.append(ztaskarray)
+
     # List to store individual 4D arrays
-    data_arrays = [nib.load(task).get_fdata() for task in task_paths]
+    #data_arrays = [zscore(nib.load(task).get_fdata(), axis=None, ddof=1) for task in task_paths]
 
     # store affine of 1st input image for below
     task_affine = nib.load(task_paths[0]).affine
