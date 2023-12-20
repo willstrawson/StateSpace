@@ -3,9 +3,16 @@
 """
 Created on Wed Feb 22 08:17:21 2023
 
-@author: bront
+@authors: Bronte Mckeown, Will Strawson, Ian Goodall-Halliwell
 
-Contains functions to correlate tasks in task battery with gradients.
+Contains functions to correlate:
+1) group-level brain maps
+2) individual-level brain maps
+3) Per-TR brain maps
+
+With the first five Gradients from Margulies et al.
+
+This produces 'coordinates' in state space.
 
 """
 
@@ -17,30 +24,50 @@ import os
 import pandas as pd
 import numpy as np
 import pkg_resources
-from scipy.stats import zscore
+from nilearn import masking
 
-
-# this function extracts necessary data needed to run corrTasks function (see below)
 def getdata(mask_name, map_coverage):
-    # use pkg_resources to access the absolute path for each data subdirectory 
-    gradient_subdir = pkg_resources.resource_filename('StateSpace','data/gradients')
-    # then use glob to access a list of files within
-    if map_coverage == 'cortical_only':
-        gradient_paths = sorted(glob.glob(f'{gradient_subdir}/*cortical_only.nii.gz'))
-    elif map_coverage == 'all':
-        gradient_paths = sorted(glob.glob(f'{gradient_subdir}/*subcortical.nii.gz'))
+    """
+    Get the paths of gradient, mask, and task files.
 
-    mask_subdir = pkg_resources.resource_filename('StateSpace','data/masks')
-    mask_path = sorted(glob.glob(f'{mask_subdir}/{mask_name}.nii.gz'))[0]
+    Args:
+        mask_name (str): The name of the mask.
+        map_coverage (str): The coverage of the map.
 
-    task_subdir = pkg_resources.resource_filename('StateSpace','data/realTaskNiftis')
-    task_paths = sorted(glob.glob(f'{task_subdir}/*nii.gz'))
+    Returns:
+        tuple: A tuple containing the paths of gradient files, mask file, and task files.
+    """
+    def get_sorted_paths(subdir, pattern):
+        subdir_path = pkg_resources.resource_filename('StateSpace', subdir)
+        return sorted(glob.glob(f'{subdir_path}/{pattern}'))
+
+    gradient_pattern = '*cortical_only.nii.gz' if map_coverage == 'cortical_only' else '*subcortical.nii.gz'
+    gradient_paths = get_sorted_paths('data/gradients', gradient_pattern)
+
+    mask_paths = get_sorted_paths('data/masks', f'{mask_name}.nii.gz')
+    mask_path = mask_paths[0]
+
+    task_paths = get_sorted_paths('data/realTaskNiftis', '*nii.gz')
 
     return gradient_paths, mask_path, task_paths
 
-# this function correlates group maps and gradient maps
 def corrGroup(mask_name, map_coverage, outputdir=None, inputfiles=None,
               corr_method='spearman', saveMaskedimgs = False,verbose=-1):
+    """
+    Calculate the correlation between task maps and gradients.
+
+    Args:
+        mask_name (str): The name of the mask.
+        map_coverage (float): The coverage of the map.
+        outputdir (str, optional): The output directory. Defaults to None.
+        inputfiles (list, optional): The input task maps. Defaults to None.
+        corr_method (str, optional): The correlation method. Defaults to 'spearman'.
+        saveMaskedimgs (bool, optional): Whether to save masked task images. Defaults to False.
+        verbose (int, optional): The verbosity level. Defaults to -1.
+
+    Returns:
+        pandas.DataFrame: The correlation values between task maps and gradients.
+    """
 
     # get all the relevent data by calling getdata() function
     if inputfiles is None:
@@ -138,33 +165,55 @@ def corrGroup(mask_name, map_coverage, outputdir=None, inputfiles=None,
 
 def taskid_subid(pth, taskstring, substring):
     """
-    Function to extract task id and sub id from file path if running individual level analyses
- 
+    Extracts the task ID and subject ID from a file path when running individual level analyses.
+
+    Args:
+        pth (str): The file path.
+        taskstring (str): The string identifying the task.
+        substring (str): The string identifying the subject.
+
+    Returns:
+        tuple: A tuple containing the task ID and subject ID extracted from the file path.
     """
-    
     # Normalize the path using os.path
     normalized_path = os.path.normpath(pth)
-    
-    # split path using forward slash
-    splits = normalized_path.split('/')
 
-    taskid = [i for i in splits if taskstring in i]
-    subid = [i for i in splits if substring in i]
+    # split path using os.path.split
+    splits = normalized_path.split(os.path.sep)
+
+    taskid = None
+    subid = None
+
+    for i in splits:
+        if taskstring in i:
+            taskid = i
+        if substring in i:
+            subid = i
+        if taskid and subid:
+            break
 
     assert taskid
     assert subid
 
-    return taskid[0], subid[0]
+    return taskid, subid
 
 def runid(pth, runstring):
     """
-    Function to extract run id from file path if running run level analyses
+    Extracts the run ID from a file path when running run level analyses.
+
+    Args:
+        pth (str): The file path.
+        runstring (str): The string identifying the run.
+
+    Returns:
+        str: The run ID extracted from the file path.
     """
+
     # Normalize the path using os.path
     normalized_path = os.path.normpath(pth)
     
     # split path using forward slash
-    splits = normalized_path.split('/')
+    splits = normalized_path.split(os.path.sep)
 
     runid = [i for i in splits if runstring in i]
     
@@ -172,10 +221,27 @@ def runid(pth, runstring):
 
     return runid[0]
 
-# this function correlates individual-level maps and gradient maps
 def corrInd(mask_name, map_coverage, inputfiles, outputdir,
             taskstring, substring, runstring = None,
             corr_method='spearman', verbose=-1):
+    """
+    Correlate individual-level maps and gradient maps.
+
+    Args:
+        mask_name (str): The name of the mask.
+        map_coverage (float): The coverage of the map.
+        inputfiles (list): The input task maps.
+        outputdir (str): The output directory.
+        taskstring (str): The string identifying the task.
+        substring (str): The string identifying the subject.
+        runstring (str, optional): The string identifying the run. Defaults to None.
+        corr_method (str, optional): The correlation method. Defaults to 'spearman'.
+        verbose (int, optional): The verbosity level. Defaults to -1.
+
+    Returns:
+        pandas.DataFrame: The correlation values between task maps and gradients.
+    """
+
 
     assert type(inputfiles)==list
     assert os.path.exists(os.path.dirname(inputfiles[0]))
@@ -313,5 +379,141 @@ def corrInd(mask_name, map_coverage, inputfiles, outputdir,
         df_wide.to_csv(os.path.join(outputdir,f'gradscores_{corr_method}_{mask_name}_wide.csv'), index=False)
 
     return df_wide
+
+
+# added this for TR function to then later add into other two functions (after tagging)
+def corrGrads(corr_method, verbose, gradient_array, input_array):
+    if corr_method == 'spearman':
+        corr = spearmanr(gradient_array.flatten(), input_array.flatten())[0]
+        if verbose > 0:
+            print (f"Spearman correlation:",corr)
+
+    elif corr_method == 'pearson':
+        corr = pearsonr(gradient_array.flatten(), input_array.flatten())[0]
+		        # apply fishers-r-to-z transformation to correlation value
+        corr = np.arctanh(corr)
+        if verbose > 0:
+            print (f"Pearson (Fisher r-to-z) correlation:",corr)
+    return corr
+
+def corrGroupTimeCourse(mask_name, map_coverage, timecourse_name, inputfiles, outputdir=None,
+              corr_method='spearman', verbose=-1):
+    
+    assert type(inputfiles)==list
+    assert os.path.exists(os.path.dirname(inputfiles[0]))
+    if verbose > 0:
+            print(f"Using {len(inputfiles)} input task maps")
+    gradient_paths, mask_path, task_paths = getdata(mask_name, map_coverage)
+
+    task_paths = inputfiles
+
+    # load mask as nib object
+    maskimg = nib.load(mask_path)
+
+    # List to store individual 4D arrays
+    data_arrays = [nib.load(task).get_fdata() for task in task_paths]
+
+    # store affine of 1st input image for below
+    task_affine = nib.load(task_paths[0]).affine
+
+    # Combine the individual arrays into a single 5D array (additional dimension for individuals)
+    combined_brain_data = np.array(data_arrays)
+
+    # Calculate the average along the first axis (axis=0) to get the average brain data across individuals
+    # makes it a 4-day array again (group-average)
+    group_averaged_time_course = np.mean(combined_brain_data, axis=0)
+
+    # convert 4-d array back to nifi image
+    groupimg = nib.Nifti1Image(group_averaged_time_course, affine=task_affine)
+
+    # reshape mask to be 4d (additional dimension of time)
+    print ("mask shape:",maskimg.get_fdata().shape)
+    # mask_reshaped = maskimg.get_fdata()[:, :, :, np.newaxis]
+    mask_reshaped = np.expand_dims(maskimg.get_fdata(), axis=-1)
+    groupimg_shape = groupimg.shape
+    mask_reshaped = np.tile(mask_reshaped, (1, 1, 1, groupimg_shape[3]))
+    print ("mask reshaped:",mask_reshaped.shape)
+
+    # convert mask back to image
+    maskimg_4d = nib.Nifti1Image(mask_reshaped, maskimg.affine)
+
+    # apply mask to group-averaged image
+    try:
+        multmap = nimg.math_img('a*b',a=groupimg, b=maskimg_4d) #element wise multiplication
+
+    except ValueError: # if shapes don't match
+        print('Shapes of images do not match')
+        print(f'mask image shape: {maskimg_4d.shape}, task image shape {groupimg_shape}')
+        print('Reshaping task to mask image dimensions...')
+        groupimg = nimg.resample_to_img(source_img=groupimg,target_img=maskimg_4d,interpolation='nearest')
+        multmap = nimg.math_img('a*b',a=groupimg, b=maskimg_4d) #element wise multiplication
+
+    # get data from masked array
+    group_array_masked = multmap.get_fdata()
+
+    # create corr dictionary for results
+    corr_dictionary = {}
+
+    # Iterate through each of Neurovault's gradients
+    for gradient in gradient_paths:
+
+        grad_name = os.path.basename(os.path.normpath(gradient))
+        grad_name = grad_name.split(".")[0]
+
+        if verbose > 0:
+            print (grad_name)
+
+        # create key for gradient
+        if grad_name not in corr_dictionary:
+            corr_dictionary[grad_name] = {}
+
+        # load gradient
+        gradientimg = nib.load(gradient)
+
+        # apply mask to gradient
+        gradientimg_m = nimg.math_img('a*b',a=gradientimg, b=maskimg)                
+
+        # Get the masked gradient image data as a numpy array
+        gradient_array = gradientimg_m.get_fdata()
+
+        # loop over group-averaged array TRs (4th dimension)
+        for tr_volume in range(group_array_masked.shape[3]):
+
+            # select TR volume
+            tr_array_masked = group_array_masked[:, :, :, tr_volume]
+
+            # correlate task map and gradients
+            corr = corrGrads(corr_method, verbose, gradient_array, tr_array_masked)
+
+            if verbose > 0:
+                print ("TR:",tr_volume)
+
+            corr_dictionary[grad_name][tr_volume] = corr
+
+    # Transform corr_dictionary into pandas DataFrame
+    df = pd.DataFrame([{grad_name: corr_dictionary[grad_name].get(tr_volume, None) for tr_volume in corr_dictionary[grad_name]} for grad_name in corr_dictionary])
+
+    # Set the index name to 'TR'
+    df.index.name = 'TR'
+
+    # Reset index to make 'TR' a column
+    df.reset_index(inplace=True)
+
+    # save to output dir
+    if outputdir != None:
+        df.to_csv(os.path.join(outputdir,f'gradscores_{timecourse_name}_{corr_method}_{mask_name}.csv'), index=False)
+
+    # returns group-averaged results
+    return df
+
+
+
+        
+
+
+
+
+
+
 
 
