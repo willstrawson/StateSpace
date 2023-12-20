@@ -491,8 +491,8 @@ def corrGroupTimeCourse(mask_name, map_coverage, timecourse_name, inputfiles, ou
             corr_dictionary[grad_name][tr_volume] = corr
 
     # Transform corr_dictionary into pandas DataFrame
-    df = pd.DataFrame([{grad_name: corr_dictionary[grad_name].get(tr_volume, None) for tr_volume in corr_dictionary[grad_name]} for grad_name in corr_dictionary])
-
+    df = pd.DataFrame({grad_name: [corr_dictionary[grad_name].get(tr_volume, None) for tr_volume in corr_dictionary.get(grad_name, {})] for grad_name in corr_dictionary})
+    
     # Set the index name to 'TR'
     df.index.name = 'TR'
 
