@@ -380,6 +380,22 @@ def corrInd(mask_name, map_coverage, inputfiles, outputdir,
 
     return df_wide
 
+
+# added this for TR function to then later add into other two functions (after tagging)
+def corrGrads(corr_method, verbose, gradient_array, input_array):
+    if corr_method == 'spearman':
+        corr = spearmanr(gradient_array.flatten(), input_array.flatten())[0]
+        if verbose > 0:
+            print (f"Spearman correlation:",corr)
+
+    elif corr_method == 'pearson':
+        corr = pearsonr(gradient_array.flatten(), input_array.flatten())[0]
+		        # apply fishers-r-to-z transformation to correlation value
+        corr = np.arctanh(corr)
+        if verbose > 0:
+            print (f"Pearson (Fisher r-to-z) correlation:",corr)
+    return corr
+
 def corrGroupTimeCourse(mask_name, map_coverage, timecourse_name, inputfiles, outputdir=None,
               corr_method='spearman', verbose=-1):
     
@@ -391,23 +407,14 @@ def corrGroupTimeCourse(mask_name, map_coverage, timecourse_name, inputfiles, ou
 
     task_paths = inputfiles
 
-    # load mask as nib object once 
+    # load mask as nib object
     maskimg = nib.load(mask_path)
 
     # List to store individual 4D arrays
-    data_arrays = []
+    data_arrays = [nib.load(task).get_fdata() for task in task_paths]
 
-    # Loop over the file paths in task_paths
-    for task in task_paths:
-        # load task image
-        taskimg = nib.load(task)
-        # Get the 4D data array
-        data = taskimg.get_fdata()
-        # Add the 4D array to the list
-        data_arrays.append(data)
-
-    # store affine last image for below
-    affine_matrix = taskimg.affine
+    # store affine of 1st input image for below
+    task_affine = nib.load(task_paths[0]).affine
 
     # Combine the individual arrays into a single 5D array (additional dimension for individuals)
     combined_brain_data = np.array(data_arrays)
@@ -416,32 +423,30 @@ def corrGroupTimeCourse(mask_name, map_coverage, timecourse_name, inputfiles, ou
     # makes it a 4-day array again (group-average)
     group_averaged_time_course = np.mean(combined_brain_data, axis=0)
 
-    # convert 4-d array back to image
-    groupimg = nib.Nifti1Image(group_averaged_time_course, affine=affine_matrix)
+    # convert 4-d array back to nifi image
+    groupimg = nib.Nifti1Image(group_averaged_time_course, affine=task_affine)
 
     # reshape mask to be 4d (additional dimension of time)
-    mask_reshaped = maskimg.get_fdata()[:, :, :, np.newaxis]
+    print ("mask shape:",maskimg.get_fdata().shape)
+    # mask_reshaped = maskimg.get_fdata()[:, :, :, np.newaxis]
+    mask_reshaped = np.expand_dims(maskimg.get_fdata(), axis=-1)
     groupimg_shape = groupimg.shape
     mask_reshaped = np.tile(mask_reshaped, (1, 1, 1, groupimg_shape[3]))
+    print ("mask reshaped:",mask_reshaped.shape)
 
     # convert mask back to image
     maskimg_4d = nib.Nifti1Image(mask_reshaped, maskimg.affine)
 
-    # apply mask 
+    # apply mask to group-averaged image
     try:
-        multmap = nimg.math_img('a*b',a=groupimg, b=maskimg_4d) #element wise multiplication 
-        # multmap = masking.apply_mask(groupimg, maskimg)
-        # Get the original 4D data as a numpy array
-        # Element-wise multiplication to set masked-out voxels to zero
-        # multmap = np.multiply(group_averaged_time_course, maskimg.get_fdata()[:, :, :, np.newaxis])
+        multmap = nimg.math_img('a*b',a=groupimg, b=maskimg_4d) #element wise multiplication
 
     except ValueError: # if shapes don't match
         print('Shapes of images do not match')
-        print(f'mask image shape: {maskimg_4d.shape}, task image shape {groupimg.shape}')
+        print(f'mask image shape: {maskimg_4d.shape}, task image shape {groupimg_shape}')
         print('Reshaping task to mask image dimensions...')
         groupimg = nimg.resample_to_img(source_img=groupimg,target_img=maskimg_4d,interpolation='nearest')
         multmap = nimg.math_img('a*b',a=groupimg, b=maskimg_4d) #element wise multiplication
-        # multmap = masking.apply_mask(groupimg, maskimg_4d)
 
     # get data from masked array
     group_array_masked = multmap.get_fdata()
@@ -454,6 +459,7 @@ def corrGroupTimeCourse(mask_name, map_coverage, timecourse_name, inputfiles, ou
 
         grad_name = os.path.basename(os.path.normpath(gradient))
         grad_name = grad_name.split(".")[0]
+
         if verbose > 0:
             print (grad_name)
 
@@ -467,7 +473,7 @@ def corrGroupTimeCourse(mask_name, map_coverage, timecourse_name, inputfiles, ou
         # apply mask to gradient
         gradientimg_m = nimg.math_img('a*b',a=gradientimg, b=maskimg)                
 
-        # Get the gradient image data as a numpy array
+        # Get the masked gradient image data as a numpy array
         gradient_array = gradientimg_m.get_fdata()
 
         # loop over group-averaged array TRs (4th dimension)
@@ -477,27 +483,20 @@ def corrGroupTimeCourse(mask_name, map_coverage, timecourse_name, inputfiles, ou
             tr_array_masked = group_array_masked[:, :, :, tr_volume]
 
             # correlate task map and gradients
-            if corr_method == 'spearman':
-                corr = spearmanr(gradient_array.flatten(), tr_array_masked.flatten())[0]
-                if verbose > 0:
-                    print (f"Spearman correlation TR {tr_volume}:",corr)
+            corr = corrGrads(corr_method, verbose, gradient_array, tr_array_masked)
 
-            elif corr_method == 'pearson':
-                corr = pearsonr(gradient_array.flatten(), tr_array_masked.flatten())[0]
-		        # apply fishers-r-to-z transformation to correlation value
-                corr = np.arctanh(corr)
-                if verbose > 0:
-                    print (f"Pearson (Fisher r-to-z) correlation TR {tr_volume} :",corr)
+            if verbose > 0:
+                print ("TR:",tr_volume)
 
             corr_dictionary[grad_name][tr_volume] = corr
 
     # Transform corr_dictionary into pandas DataFrame
-    df = pd.DataFrame({grad_name: [corr_dictionary[grad_name].get(tr_volume, None) for tr_volume in corr_dictionary.get(grad_name, {})] for grad_name in corr_dictionary})
+    df = pd.DataFrame([{grad_name: corr_dictionary[grad_name].get(tr_volume, None) for tr_volume in corr_dictionary[grad_name]} for grad_name in corr_dictionary])
 
-    # Set the index name to 'tr_volume'
+    # Set the index name to 'TR'
     df.index.name = 'TR'
 
-    # Reset index to make 'tr_volume' a column
+    # Reset index to make 'TR' a column
     df.reset_index(inplace=True)
 
     # save to output dir
@@ -506,6 +505,7 @@ def corrGroupTimeCourse(mask_name, map_coverage, timecourse_name, inputfiles, ou
 
     # returns group-averaged results
     return df
+
 
 
         
