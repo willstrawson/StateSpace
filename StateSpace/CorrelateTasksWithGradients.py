@@ -24,7 +24,7 @@ import os
 import pandas as pd
 import numpy as np
 import pkg_resources
-from nilearn import masking
+from scipy.stats import zscore
 
 def getdata(mask_name, map_coverage):
     """
@@ -381,7 +381,7 @@ def corrInd(mask_name, map_coverage, inputfiles, outputdir,
     return df_wide
 
 
-# added this for TR function to then later add into other two functions (after tagging)
+# added this for per-TR function to then later add into other two functions
 def corrGrads(corr_method, verbose, gradient_array, input_array):
     if corr_method == 'spearman':
         corr = spearmanr(gradient_array.flatten(), input_array.flatten())[0]
@@ -396,10 +396,7 @@ def corrGrads(corr_method, verbose, gradient_array, input_array):
             print (f"Pearson (Fisher r-to-z) correlation:",corr)
     return corr
 
-from scipy.stats import zscore
-
-def corrGroupTimeCourse(mask_name, map_coverage, timecourse_name, inputfiles, outputdir=None,
-              corr_method='spearman', verbose=-1):
+def calGroupTimeCourse(mask_name, map_coverage, inputfiles, z_score = True, verbose=-1):
     
     assert type(inputfiles)==list
     assert os.path.exists(os.path.dirname(inputfiles[0]))
@@ -413,18 +410,18 @@ def corrGroupTimeCourse(mask_name, map_coverage, timecourse_name, inputfiles, ou
     maskimg = nib.load(mask_path)
 
     data_arrays = []
-
+    # load all data into a list of 4-d arrays
     for task in task_paths:
         taskimg = nib.load(task)
         taskarray = taskimg.get_fdata()
-        ztaskarray = zscore(taskarray, axis=None, ddof=1)
-        data_arrays.append(ztaskarray)
+        if z_score:
+            ztaskarray = zscore(taskarray, axis=None, ddof=1)
+            data_arrays.append(ztaskarray)
+        else:
+            data_arrays.append(taskarray)
 
-    # List to store individual 4D arrays
-    #data_arrays = [zscore(nib.load(task).get_fdata(), axis=None, ddof=1) for task in task_paths]
-
-    # store affine of 1st input image for below
-    task_affine = nib.load(task_paths[0]).affine
+    # store affine of last input image for below
+    task_affine = taskimg.affine
 
     # Combine the individual arrays into a single 5D array (additional dimension for individuals)
     combined_brain_data = np.array(data_arrays)
@@ -460,6 +457,14 @@ def corrGroupTimeCourse(mask_name, map_coverage, timecourse_name, inputfiles, ou
 
     # get data from masked array
     group_array_masked = multmap.get_fdata()
+
+    return group_array_masked
+    
+def corrGroupTimeCourse(mask_name, map_coverage, timecourse_name, group_array_masked, outputdir=None,
+              corr_method='spearman', verbose=-1):
+    
+    gradient_paths, mask_path, task_paths = getdata(mask_name, map_coverage)
+    maskimg = nib.load(mask_path)
 
     # create corr dictionary for results
     corr_dictionary = {}
