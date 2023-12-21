@@ -492,7 +492,7 @@ def corrGroupTimeCourse(mask_name, map_coverage, timecourse_name, group_array_ma
         gradient_array = gradientimg_m.get_fdata()
 
         # loop over group-averaged array TRs (4th dimension)
-        for tr_volume in range(group_array_masked.shape[3]):
+        for tr_volume in range(group_array_masked.shape[3]+1):
 
             # select TR volume
             tr_array_masked = group_array_masked[:, :, :, tr_volume]
