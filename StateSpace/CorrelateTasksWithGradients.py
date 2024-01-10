@@ -26,6 +26,11 @@ import numpy as np
 import pkg_resources
 from scipy.stats import zscore
 
+
+def get_sorted_paths(subdir, pattern):
+    subdir_path = pkg_resources.resource_filename('StateSpace', subdir)
+    return sorted(glob.glob(f'{subdir_path}/{pattern}'))
+
 def getdata(mask_name, map_coverage):
     """
     Get the paths of gradient, mask, and task files.
@@ -37,28 +42,58 @@ def getdata(mask_name, map_coverage):
     Returns:
         tuple: A tuple containing the paths of gradient files, mask file, and task files.
     """
-    def get_sorted_paths(subdir, pattern):
-        subdir_path = pkg_resources.resource_filename('StateSpace', subdir)
-        return sorted(glob.glob(f'{subdir_path}/{pattern}'))
-
     gradient_pattern = '*cortical_only.nii.gz' if map_coverage == 'cortical_only' else '*subcortical.nii.gz'
     gradient_paths = get_sorted_paths('data/gradients', gradient_pattern)
 
-    mask_paths = get_sorted_paths('data/masks', f'{mask_name}.nii.gz')
-    mask_path = mask_paths[0]
+    try: 
+        mask_paths = get_sorted_paths('data/masks', f'{mask_name}.nii.gz')
+        mask_path = mask_paths[0]
+    except:
+        if os.path.exists(mask_name):
+            mask_path = f'{mask_name}'
+        else:
+            print ("Mask path not found. If using own mask, provide full path.")
 
     task_paths = get_sorted_paths('data/realTaskNiftis', '*nii.gz')
 
     return gradient_paths, mask_path, task_paths
 
+def applymask(taskimg, maskimg):
+    # apply mask 
+    try:
+        return nimg.math_img('a*b',a=taskimg, b=maskimg) #element wise multiplication - return the resulting map
+    
+    except ValueError: # if shapes don't match
+        print('Shapes of images do not match')
+        print(f'mask image shape: {maskimg.shape}, task image shape {taskimg.shape}')
+        print('Reshaping task to mask image dimensions...')
+        taskimg = nimg.resample_to_img(source_img=taskimg,target_img=maskimg,interpolation='nearest')
+
+        return nimg.math_img('a*b',a=taskimg, b=maskimg) #element wise multiplication - return the resulting map
+
+def corrGrads(gradient_array, input_array, corr_method='spearman', verbose=1):
+    if corr_method == 'spearman':
+        corr = spearmanr(gradient_array.flatten(), input_array.flatten())[0]
+        if verbose > 0:
+            print (f"Spearman correlation:",corr)
+
+    elif corr_method == 'pearson':
+        corr = pearsonr(gradient_array.flatten(), input_array.flatten())[0]
+		        # apply fishers-r-to-z transformation to correlation value
+        corr = np.arctanh(corr)
+        if verbose > 0:
+            print (f"Pearson (Fisher r-to-z) correlation:",corr)
+    return corr
+
+
 def corrGroup(mask_name, map_coverage, outputdir=None, inputfiles=None,
-              corr_method='spearman', saveMaskedimgs = False,verbose=-1):
+              corr_method='spearman', saveMaskedimgs = False,verbose=1):
     """
     Calculate the correlation between task maps and gradients.
 
     Args:
         mask_name (str): The name of the mask.
-        map_coverage (float): The coverage of the map.
+        map_coverage (str): The coverage of the map.
         outputdir (str, optional): The output directory. Defaults to None.
         inputfiles (list, optional): The input task maps. Defaults to None.
         corr_method (str, optional): The correlation method. Defaults to 'spearman'.
@@ -73,47 +108,33 @@ def corrGroup(mask_name, map_coverage, outputdir=None, inputfiles=None,
     if inputfiles is None:
         # Get all the data paths you need
         gradient_paths, mask_path, task_paths = getdata(mask_name, map_coverage) 
-    elif inputfiles:
-        assert type(inputfiles)==list 
-        assert os.path.exists(os.path.dirname(inputfiles[0]))
-        if verbose > 0:
-            print(f"Using {len(inputfiles)} input task maps")
-        gradient_paths, mask_path, task_paths = getdata(mask_name, map_coverage)
-        task_paths = inputfiles
 
-    # load mask as nib object once 
-    maskimg = nib.load(mask_path)
+    elif inputfiles:
+        gradient_paths, mask_path, task_paths = usrpaths(inputfiles, verbose, mask_name, map_coverage)
 
     # create empty dictionary to store correlation values in
     corr_dictionary = {}
 
+    maskimg=nib.loadimg(mask_path)
+
     # loop over each task
     for task in task_paths:
-
-        # load task image and data
-        taskimg = nib.load(task)
 
         # extract task name from file path
         task_name = os.path.basename(os.path.normpath(task))
         task_name = task_name.split(".")[0]
 
-        # apply mask 
-        try:
-            multmap = nimg.math_img('a*b',a=taskimg, b=maskimg) #element wise multiplication 
-        except ValueError: # if shapes don't match
-            print('Shapes of images do not match')
-            print(f'mask image shape: {maskimg.shape}, task image shape {taskimg.shape}')
-            print('Reshaping task to mask image dimensions...')
-            taskimg = nimg.resample_to_img(source_img=taskimg,target_img=maskimg,interpolation='nearest')
-            multmap = nimg.math_img('a*b',a=taskimg, b=maskimg) #element wise multiplication 
+        taskimg=nib.loadimg(task)
+
+        multmap = applymask(taskimg, maskimg)
+
+        # turn to numpy array 
+        task_array_masked = multmap.get_fdata()
 
         # if you want to save masked task images, set to true
         if saveMaskedimgs == True and outputdir != None:
             nib.save(multmap, 
             os.path.join(outputdir,f'{task_name}_masked.nii.gz'))
-
-        # turn to numpy array 
-        task_array_masked = multmap.get_fdata()
 
         # create 1st level dictionary key (task name)
         corr_dictionary[task_name] = {}
@@ -122,36 +143,17 @@ def corrGroup(mask_name, map_coverage, outputdir=None, inputfiles=None,
             print('\n')
 
         # Iterate through each of Neurovault's gradients
-        for index, (gradient) in enumerate(gradient_paths):
+        for gradient in gradient_paths:
+            grad_name = gradname(gradient, verbose)
 
-            grad_name = os.path.basename(os.path.normpath(gradient))
-            grad_name = grad_name.split(".")[0]
-            if verbose > 0:
-                print (grad_name)
-
-            # load gradient
-            gradientimg = nib.load(gradient)
-
-            # apply mask to gradient
-            gradientimg_m = nimg.math_img('a*b',a=gradientimg, b=maskimg)                
-
+            gradient_img=nib.loadimg(gradient)
+            gradientimg_m = applymask(gradient_img, maskimg)              
             # Get the gradient image data as a numpy array
-            gradient_array = gradientimg_m.get_fdata()
+            gradient_array_masked = gradientimg_m.get_fdata()
 
-            # correlate task map and gradients 
-            if corr_method == 'spearman':
-                corr = spearmanr(gradient_array.flatten(), task_array_masked.flatten())[0]
-                if verbose > 0:
-                    print ("Spearman correlation:",corr)
+            corr = corrGrads(gradient_array_masked,task_array_masked)
 
-            elif corr_method == 'pearson':
-                corr = pearsonr(gradient_array.flatten(), task_array_masked.flatten())[0]
-		        # apply fishers-r-to-z transformation to correlation value
-                corr = np.arctanh(corr)
-                if verbose > 0:
-                    print ("Pearson (Fisher r-to-z transformed) correlation:",corr)
-
-            corr_dictionary[task_name][grad_name]= corr # add corr value to dict
+            corr_dictionary[task_name][grad_name] = corr # add corr value to dict
 
     # store results in transposed dataframe
     df = pd.DataFrame(corr_dictionary).T
@@ -242,17 +244,11 @@ def corrInd(mask_name, map_coverage, inputfiles, outputdir,
         pandas.DataFrame: The correlation values between task maps and gradients.
     """
 
-
-    assert type(inputfiles)==list
-    assert os.path.exists(os.path.dirname(inputfiles[0]))
-    if verbose > 0:
-            print(f"Using {len(inputfiles)} input task maps")
-    gradient_paths, mask_path, task_paths = getdata(mask_name, map_coverage)
-
-    task_paths = inputfiles
+    gradient_paths, mask_path, task_paths = usrpaths(inputfiles, verbose, mask_name, map_coverage)
 
     # load mask as nib object once 
-    maskimg = nib.load(mask_path)
+    maskimg = nib.load(mask_path) 
+
 
     # create empty dictionary to store correlation values in
     corr_dictionary = {}
@@ -260,21 +256,14 @@ def corrInd(mask_name, map_coverage, inputfiles, outputdir,
     # loop over each task
     for task in task_paths:
 
-        # load task image and data
-        taskimg = nib.load(task)
-
-        # extract task name and subject id from file path
+         # extract task name and subject id from file path
         task_name, subid = taskid_subid(task, taskstring, substring)
 
-        # apply mask 
-        try:
-            multmap = nimg.math_img('a*b',a=taskimg, b=maskimg) #element wise multiplication 
-        except ValueError: # if shapes don't match
-            print('Shapes of images do not match')
-            print(f'mask image shape: {maskimg.shape}, task image shape {taskimg.shape}')
-            print('Reshaping task to mask image dimensions...')
-            taskimg = nimg.resample_to_img(source_img=taskimg,target_img=maskimg,interpolation='nearest')
-            multmap = nimg.math_img('a*b',a=taskimg, b=maskimg) #element wise multiplication
+
+        # load task image and data
+        taskimg = nib.load(task)
+        
+        multmap = applymask(taskimg, maskimg)
 
         # turn to numpy array
         task_array_masked = multmap.get_fdata()
@@ -297,35 +286,23 @@ def corrInd(mask_name, map_coverage, inputfiles, outputdir,
             print (task_name)
             print('\n')
 
+        
+
         # Iterate through each of Neurovault's gradients
-        for index, (gradient) in enumerate(gradient_paths):
+        for gradient in gradient_paths:
 
-            grad_name = os.path.basename(os.path.normpath(gradient))
-            grad_name = grad_name.split(".")[0]
-            if verbose > 0:
-                print (grad_name)
+            grad_name = gradname(gradient, verbose)
 
-            # load gradient
-            gradientimg = nib.load(gradient)
 
-            # apply mask to gradient
-            gradientimg_m = nimg.math_img('a*b',a=gradientimg, b=maskimg)                
+            gradientimg = nib.loadimg(gradient)
+
+            gradientimg_m = applymask(gradientimg, maskimg)  
 
             # Get the gradient image data as a numpy array
-            gradient_array = gradientimg_m.get_fdata()
+            gradient_array_masked = gradientimg_m.get_fdata()
 
             # correlate task map and gradients 
-            if corr_method == 'spearman':
-                corr = spearmanr(gradient_array.flatten(), task_array_masked.flatten())[0]
-                if verbose > 0:
-                    print ("Spearman correlation:",corr)
-
-            elif corr_method == 'pearson':
-                corr = pearsonr(gradient_array.flatten(), task_array_masked.flatten())[0]
-		        # apply fishers-r-to-z transformation to correlation value
-                corr = np.arctanh(corr)
-                if verbose > 0:
-                    print ("Pearson (Fisher r-to-z transformed) correlation:",corr)
+            corr = corrGrads(gradient_array_masked,task_array_masked)
 
             if runstring is None:
                 corr_dictionary[task_name][subid][grad_name] = corr
@@ -381,30 +358,10 @@ def corrInd(mask_name, map_coverage, inputfiles, outputdir,
     return df_wide
 
 
-# added this for per-TR function to then later add into other two functions
-def corrGrads(corr_method, verbose, gradient_array, input_array):
-    if corr_method == 'spearman':
-        corr = spearmanr(gradient_array.flatten(), input_array.flatten())[0]
-        if verbose > 0:
-            print (f"Spearman correlation:",corr)
-
-    elif corr_method == 'pearson':
-        corr = pearsonr(gradient_array.flatten(), input_array.flatten())[0]
-		        # apply fishers-r-to-z transformation to correlation value
-        corr = np.arctanh(corr)
-        if verbose > 0:
-            print (f"Pearson (Fisher r-to-z) correlation:",corr)
-    return corr
 
 def calGroupTimeCourse(mask_name, map_coverage, inputfiles, z_score = True, verbose=-1):
     
-    assert type(inputfiles)==list
-    assert os.path.exists(os.path.dirname(inputfiles[0]))
-    if verbose > 0:
-            print(f"Using {len(inputfiles)} input task maps")
-    gradient_paths, mask_path, task_paths = getdata(mask_name, map_coverage)
-
-    task_paths = inputfiles
+    gradient_paths, mask_path, task_paths=usrpaths(inputfiles, verbose, mask_name, map_coverage)
 
     # load mask as nib object
     maskimg = nib.load(mask_path)
@@ -445,15 +402,7 @@ def calGroupTimeCourse(mask_name, map_coverage, inputfiles, z_score = True, verb
     maskimg_4d = nib.Nifti1Image(mask_reshaped, maskimg.affine)
 
     # apply mask to group-averaged image
-    try:
-        multmap = nimg.math_img('a*b',a=groupimg, b=maskimg_4d) #element wise multiplication
-
-    except ValueError: # if shapes don't match
-        print('Shapes of images do not match')
-        print(f'mask image shape: {maskimg_4d.shape}, task image shape {groupimg_shape}')
-        print('Reshaping task to mask image dimensions...')
-        groupimg = nimg.resample_to_img(source_img=groupimg,target_img=maskimg_4d,interpolation='nearest')
-        multmap = nimg.math_img('a*b',a=groupimg, b=maskimg_4d) #element wise multiplication
+    multmap=applymask(groupimg,maskimg_4d )
 
     # get data from masked array
     group_array_masked = multmap.get_fdata()
@@ -522,8 +471,23 @@ def corrGroupTimeCourse(mask_name, map_coverage, timecourse_name, group_array_ma
     return df
 
 
+def usrpaths(inputfiles, verbose, mask_name, map_coverage):
+    assert type(inputfiles)==list 
+    assert os.path.exists(os.path.dirname(inputfiles[0]))
+    if verbose > 0:
+        print(f"Using {len(inputfiles)} input task maps")
+    gradient_paths, mask_path, task_paths = getdata(mask_name, map_coverage)
+    task_paths = inputfiles
+    return  gradient_paths, mask_path, task_paths
 
-        
+def gradname(gradient_path, verbose):
+    grad_name = os.path.basename(os.path.normpath(gradient_path))
+    grad_name = grad_name.split(".")[0]
+    if verbose > 0:
+        print (grad_name)
+
+    return grad_name
+
 
 
 
