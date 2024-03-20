@@ -4,3 +4,10 @@ Version: 0.0.1
 Summary: Package of functions to calculate gradient correlations for task battery maps.
 Author: Bronte Mckeown & Will Strawson
 Author-email: bronte.mckeown@gmail.com
+Requires-Dist: nilearn
+Requires-Dist: nibabel
+Requires-Dist: pandas
+Requires-Dist: numpy
+Requires-Dist: scipy
+Requires-Dist: matplotlib
+Requires-Dist: tqdm
